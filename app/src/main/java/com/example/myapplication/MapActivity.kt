@@ -37,8 +37,22 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
+import com.example.myapplication.discovery.Discovery
+import com.example.myapplication.discovery.DiscoveryActivity
+import com.example.myapplication.discovery.DiscoveryListActivity
+import com.example.myapplication.discovery.DiscoveryScreen
+import com.example.myapplication.discovery.DiscoveryListScreen
+
+data class Ping(
+    val latitude: Double,
+    val longitude: Double,
+    val titre: String,
+    val description: String,
+    val imageUri: String
+)
+
 class MapActivity : ComponentActivity() {
-    private val REQUEST_PERMISSIONS_REQUEST_CODE = 1
+    private val RequestPermissionsRequestCode = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,11 +82,12 @@ class MapActivity : ComponentActivity() {
             ActivityCompat.requestPermissions(
                 this,
                 permissionsToRequest.toTypedArray(),
-                REQUEST_PERMISSIONS_REQUEST_CODE
+                RequestPermissionsRequestCode
             )
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -86,11 +101,11 @@ class MapActivity : ComponentActivity() {
                 permissionsToRequest.add(permissions[i])
             }
         }
-        if (permissionsToRequest.size > 0) {
+        if (permissionsToRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(
                 this,
                 permissionsToRequest.toTypedArray(),
-                REQUEST_PERMISSIONS_REQUEST_CODE
+                RequestPermissionsRequestCode
             )
         }
     }

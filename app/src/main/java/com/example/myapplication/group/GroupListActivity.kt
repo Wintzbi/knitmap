@@ -26,10 +26,13 @@ import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
 
+import com.example.myapplication.friend.Friend
+
 data class Group(
     var title: String,
     var description: String,
-    var imageResId: Int
+    var imageResId: Int,
+    val amis: List<Friend> = emptyList()
 ) : java.io.Serializable
 
 class GroupListActivity : ComponentActivity() {
