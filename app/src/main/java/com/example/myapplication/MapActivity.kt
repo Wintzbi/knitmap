@@ -1,8 +1,13 @@
 package com.example.myapplication
 
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.myapplication.storage.getPings
+import com.example.myapplication.storage.savePings
 import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -36,6 +41,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import java.io.Serializable
 
 import com.example.myapplication.discovery.Discovery
 import com.example.myapplication.discovery.DiscoveryActivity
@@ -43,13 +49,18 @@ import com.example.myapplication.discovery.DiscoveryListActivity
 import com.example.myapplication.discovery.DiscoveryScreen
 import com.example.myapplication.discovery.DiscoveryListScreen
 
+import com.example.myapplication.storage.saveAmis
+import com.example.myapplication.storage.saveGroupes
+import com.example.myapplication.storage.savePings
+import com.example.myapplication.storage.saveVoyages
+
 data class Ping(
     val latitude: Double,
     val longitude: Double,
     val titre: String,
     val description: String,
     val imageUri: String
-)
+) : Serializable
 
 class MapActivity : ComponentActivity() {
     private val RequestPermissionsRequestCode = 1
@@ -114,25 +125,50 @@ class MapActivity : ComponentActivity() {
 @Composable
 fun MapScreen() {
     val context = LocalContext.current
+    val activity = context as? ComponentActivity
     var isFollowingLocation by remember { mutableStateOf(false) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == ComponentActivity.RESULT_OK) {
+            val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
+            if (updated != null) {
+                val location = GeoPoint(48.8583, 2.2944) // Remplace par position réelle si possible
+                val newPing = Ping(
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    titre = updated.title,
+                    description = updated.description,
+                    imageUri = "" // À remplir si image dispo
+                )
+                val existing = getPings(context).toMutableList()
+                existing.add(newPing)
+                savePings(context, existing)
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val configuration = Configuration.getInstance()
         configuration.load(context, context.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
+
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             Map(Modifier.padding(innerPadding), isFollowingLocation) {
                 isFollowingLocation = false
             }
         }
-        // Menu en haut à gauche (il est automatiquement superposé à l'image)
+
+        // Menu en haut à gauche
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(16.dp) // Assure-toi que le menu est à l'extérieur de l'image
+                .padding(16.dp)
         ) {
             MenuWithDropdown()
         }
-        // Bouton "Suivre" en bas à droite
+
+        // Bouton Suivre en bas à droite
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -142,8 +178,28 @@ fun MapScreen() {
                 isFollowingLocation = !isFollowingLocation
             }
         }
+
+        // 🚀 Bouton Ping en bas au centre
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        ) {
+            Button(onClick = {
+                val intent = Intent(context, DiscoveryActivity::class.java).apply {
+                    putExtra(
+                        "discovery",
+                        Discovery("Nouveau ping", "Description ici", R.drawable.cat03) // 🔁 Remplace par une vraie image
+                    )
+                }
+                launcher.launch(intent)
+            }) {
+                Text("Ping")
+            }
+        }
     }
 }
+
 @Composable
 fun FollowButton(isFollowing: Boolean, onClick: () -> Unit) {
     Button(onClick = onClick) {

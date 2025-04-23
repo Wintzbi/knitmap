@@ -25,12 +25,13 @@ import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import java.io.Serializable
 
 data class Discovery(
     var title: String,
     var description: String,
     var imageResId: Int
-) : java.io.Serializable
+) : Serializable
 
 class DiscoveryListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
