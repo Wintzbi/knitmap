@@ -7,10 +7,10 @@ import com.google.gson.reflect.TypeToken
 
 import com.example.myapplication.friend.Friend
 import com.example.myapplication.travel.Travel
-import com.example.myapplication.Ping
 import com.example.myapplication.group.Group
 import androidx.core.content.edit
 import kotlin.apply
+import com.example.myapplication.discovery.Discovery
 
 private const val PREF_NAME = "my_complex_data"
 private val gson = Gson()
@@ -34,30 +34,32 @@ fun getAmis(context: Context): List<Friend> {
 
 // ---------------------- PINGS ----------------------
 
-fun savePings(context: Context, pings: List<Ping>) {
-    val json = gson.toJson(pings)
-    getPrefs(context).edit { putString("pings", json) }
+fun saveDiscoveries(context: Context, discoveries: List<Discovery>) {
+    val json = gson.toJson(discoveries)
+    getPrefs(context).edit { putString("discoveries", json) }
 }
-
-fun getPings(context: Context): List<Ping> {
-    val json = getPrefs(context).getString("pings", null) ?: return emptyList()
-    val type = object : TypeToken<List<Ping>>() {}.type
+fun getDiscoveries(context: Context): List<Discovery> {
+    val json = getPrefs(context).getString("discoveries", "[]")
+    val type = object : TypeToken<List<Discovery>>() {}.type
     return gson.fromJson(json, type)
 }
-// Supprime le Ping des prefs en fonction des coordonnées
-fun removePingByCoordinates(context: Context, latitude: Double, longitude: Double) {
-    val prefs = getPrefs(context)
-    val json = prefs.getString("pings", null) ?: return
-    val type = object : TypeToken<List<Ping>>() {}.type
-    val pings: MutableList<Ping> = gson.fromJson(json, type)
 
-    val updatedPings = pings.filterNot {
+
+
+fun removeDiscoveryByCoordinates(context: Context, latitude: Double, longitude: Double) {
+    val prefs = getPrefs(context)
+    val json = prefs.getString("discoveries", null) ?: return
+    val type = object : TypeToken<List<Discovery>>() {}.type
+    val discoveries: MutableList<Discovery> = gson.fromJson(json, type)
+
+    // Filtrer la liste pour enlever le Discovery correspondant aux coordonnées
+    val updatedDiscoveries = discoveries.filterNot {
         it.latitude == latitude && it.longitude == longitude
     }
 
-    prefs.edit().putString("pings", gson.toJson(updatedPings)).apply()
+    // Sauvegarder la liste mise à jour
+    prefs.edit().putString("discoveries", gson.toJson(updatedDiscoveries)).apply()
 }
-
 
 
 // ---------------------- VOYAGES ----------------------

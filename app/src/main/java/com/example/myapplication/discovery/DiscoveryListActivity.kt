@@ -28,11 +28,12 @@ import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
 
 import com.example.myapplication.ui.theme.MyApplicationTheme
-import com.example.myapplication.Ping
+
 import com.google.gson.reflect.TypeToken
 import java.io.Serializable
-import com.example.myapplication.storage.removePingByCoordinates
-import com.example.myapplication.storage.getPings
+import com.example.myapplication.storage.removeDiscoveryByCoordinates
+import com.example.myapplication.storage.getDiscoveries
+import com.example.myapplication.storage.saveDiscoveries
 // Nouvelle version avec latitude & longitude
 data class Discovery(
     var title: String,
@@ -59,18 +60,11 @@ class DiscoveryListActivity : ComponentActivity() {
 fun DiscoveryListScreen() {
     val context = LocalContext.current
 
+    // Chargement des découvertes depuis les préférences
     val discoveries = remember {
         mutableStateListOf<Discovery>().apply {
-            val pings = getPings(context)
-            addAll(pings.map {
-                Discovery(
-                    title = it.titre,
-                    description = it.description,
-                    imageResId = R.drawable.cat03, // image par défaut
-                    latitude = it.latitude,
-                    longitude = it.longitude
-                )
-            })
+            val savedDiscoveries = getDiscoveries(context)
+            addAll(savedDiscoveries)
         }
     }
 
@@ -83,6 +77,7 @@ fun DiscoveryListScreen() {
             val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
             if (updated != null && selectedIndex in discoveries.indices) {
                 discoveries[selectedIndex] = updated
+                saveDiscoveries(context, discoveries)  // Sauvegarde les modifications
             }
         }
     }
@@ -130,14 +125,17 @@ fun DiscoveryListScreen() {
                     discoveries.add(newDiscovery)
                     selectedIndex = discoveries.indexOf(newDiscovery)
 
+                    // Sauvegarder la nouvelle découverte dans la liste
+                    saveDiscoveries(context, discoveries)
+
                     val intent = Intent(context, DiscoveryActivity::class.java)
                     intent.putExtra("discovery", newDiscovery)
                     launcher.launch(intent)
                 },
                 onDelete = { index ->
-                    val toRemove = discoveries[index]
                     discoveries.removeAt(index)
-                    removePingByCoordinates(context, toRemove.latitude, toRemove.longitude)
+                    // Sauvegarder après suppression
+                    saveDiscoveries(context, discoveries)
                 },
                 itemContent = { item, index, onDeleteClick ->
                     Row(

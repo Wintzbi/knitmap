@@ -25,15 +25,14 @@ import androidx.compose.material.icons.filled.Delete
 import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
-
-import com.example.myapplication.Ping
+import com.example.myapplication.discovery.Discovery
 
 
 data class Travel(
     var title: String,
     var description: String,
     var imageResId: Int,
-    val pings: List<Ping> = emptyList()
+    val pings: List<Discovery> = emptyList()
 ) : java.io.Serializable
 
 class TravelListActivity : ComponentActivity() {
