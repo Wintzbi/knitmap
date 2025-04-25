@@ -26,11 +26,14 @@ import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
 
+import com.example.myapplication.Ping
+
 
 data class Travel(
     var title: String,
     var description: String,
-    var imageResId: Int
+    var imageResId: Int,
+    val pings: List<Ping> = emptyList()
 ) : java.io.Serializable
 
 class TravelListActivity : ComponentActivity() {
