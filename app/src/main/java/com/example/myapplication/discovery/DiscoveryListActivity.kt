@@ -26,7 +26,7 @@ import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.io.Serializable
-
+import com.example.myapplication.storage.getPings
 data class Discovery(
     var title: String,
     var description: String,
@@ -47,12 +47,18 @@ class DiscoveryListActivity : ComponentActivity() {
 @Composable
 fun DiscoveryListScreen() {
     val context = LocalContext.current
+
     val discoveries = remember {
-        mutableStateListOf(
-            Discovery("Paris", "Ville de lumière et d’amour.", R.drawable.paris),
-            Discovery("Tokyo", "Ville ultra-moderne.", R.drawable.tokyo),
-            Discovery("New York", "La ville qui ne dort jamais.", R.drawable.newyork)
-        )
+        mutableStateListOf<Discovery>().apply {
+            val pings = getPings(context)
+            addAll(pings.map {
+                Discovery(
+                    title = it.titre,
+                    description = it.description,
+                    imageResId = R.drawable.cat03 // image par défaut
+                )
+            })
+        }
     }
 
     var selectedIndex by remember { mutableStateOf(-1) }
