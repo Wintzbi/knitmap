@@ -46,6 +46,7 @@ class DiscoveryActivity : ComponentActivity() {
         }
     }
 }
+
 @Composable
 fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
     val context = LocalContext.current
