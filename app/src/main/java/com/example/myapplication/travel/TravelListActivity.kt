@@ -6,9 +6,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,15 +22,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.ui.theme.MyApplicationTheme
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
 import com.example.myapplication.discovery.Discovery
-
+import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.storage.getTravels
+import com.example.myapplication.storage.saveTravels
 
 data class Travel(
     var title: String,
@@ -38,7 +40,6 @@ data class Travel(
 class TravelListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             MyApplicationTheme {
                 TravelListScreen()
@@ -51,12 +52,12 @@ class TravelListActivity : ComponentActivity() {
 fun TravelListScreen() {
     val context = LocalContext.current
 
+    // Chargement des voyages depuis les préférences
     val travels = remember {
-        mutableStateListOf(
-            Travel("Paris", "Ville de lumière et d’amour.", R.drawable.paris),
-            Travel("Tokyo", "Ville ultra-moderne.", R.drawable.tokyo),
-            Travel("New York", "La ville qui ne dort jamais.", R.drawable.newyork)
-        )
+        mutableStateListOf<Travel>().apply {
+            val savedTravels = getTravels(context)
+            addAll(savedTravels)
+        }
     }
 
     var selectedIndex by remember { mutableStateOf(-1) }
@@ -68,6 +69,7 @@ fun TravelListScreen() {
             val updated = result.data?.getSerializableExtra("updatedTravel") as? Travel
             if (updated != null && selectedIndex in travels.indices) {
                 travels[selectedIndex] = updated
+                saveTravels(context, travels)  // Sauvegarde les modifications
             }
         }
     }
@@ -91,7 +93,8 @@ fun TravelListScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.height(200.dp))
 
@@ -105,49 +108,54 @@ fun TravelListScreen() {
             GenericListWithControls(
                 items = travels,
                 onAdd = {
-                    val newTravel = Travel("Nouveau voyage", "Description temporaire", R.drawable.cat03)
+                    val newTravel = Travel(
+                        "Nouveau voyage",
+                        "Description temporaire",
+                        R.drawable.cat03
+                    )
                     travels.add(newTravel)
                     selectedIndex = travels.indexOf(newTravel)
 
+                    // Sauvegarder le nouveau voyage dans la liste
+                    saveTravels(context, travels)
+
                     val intent = Intent(context, TravelActivity::class.java)
-                    intent.putExtra("Travel", newTravel)  // Utilise "Travel" comme clé
+                    intent.putExtra("Travel", newTravel)
                     launcher.launch(intent)
                 },
                 onDelete = { index ->
                     travels.removeAt(index)
+                    // Sauvegarder après suppression
+                    saveTravels(context, travels)
                 },
                 itemContent = { item, index, onDeleteClick ->
-                    Card(
-                        onClick = {
-                            selectedIndex = index
-                            val intent = Intent(context, TravelActivity::class.java)
-                            intent.putExtra("Travel", item)  // Utilise "Travel" comme clé
-                            launcher.launch(intent)
-                        },
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                            .padding(vertical = 8.dp)
+                            .clickable {
+                                selectedIndex = index
+                                val intent = Intent(context, TravelActivity::class.java)
+                                intent.putExtra("Travel", item)
+                                launcher.launch(intent)
+                            },
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Image(
-                                painter = painterResource(id = item.imageResId),
-                                contentDescription = item.title,
-                                modifier = Modifier.size(48.dp),
-                                contentScale = ContentScale.Crop
+                        Image(
+                            painter = painterResource(id = item.imageResId),
+                            contentDescription = item.title,
+                            modifier = Modifier.size(48.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(text = item.title, fontSize = 20.sp)
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(onClick = onDeleteClick) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Supprimer",
+                                tint = Color.Red
                             )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(text = item.title, fontSize = 20.sp)
-                            Spacer(modifier = Modifier.weight(1f))
-                            IconButton(onClick = onDeleteClick) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Supprimer",
-                                    tint = Color.Red
-                                )
-                            }
                         }
                     }
                 }
