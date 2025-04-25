@@ -7,8 +7,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,15 +21,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.ui.theme.MyApplicationTheme
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
-
 import com.example.myapplication.friend.Friend
+import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.storage.getGroups
+import com.example.myapplication.storage.saveGroups
+import com.example.myapplication.storage.removeGroupByName
 
 data class Group(
     var title: String,
@@ -38,7 +41,6 @@ data class Group(
 class GroupListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             MyApplicationTheme {
                 GroupListScreen()
@@ -51,12 +53,12 @@ class GroupListActivity : ComponentActivity() {
 fun GroupListScreen() {
     val context = LocalContext.current
 
+    // Chargement des groupes depuis les préférences
     val groups = remember {
-        mutableStateListOf(
-            Group("Groupe A", "Description du groupe A", R.drawable.paris),
-            Group("Groupe B", "Description du groupe B", R.drawable.paris),
-            Group("Groupe C", "Description du groupe C", R.drawable.paris)
-        )
+        mutableStateListOf<Group>().apply {
+            val savedGroups = getGroups(context)
+            addAll(savedGroups)
+        }
     }
 
     var selectedIndex by remember { mutableStateOf(-1) }
@@ -68,6 +70,7 @@ fun GroupListScreen() {
             val updated = result.data?.getSerializableExtra("updatedGroup") as? Group
             if (updated != null && selectedIndex in groups.indices) {
                 groups[selectedIndex] = updated
+                saveGroups(context, groups)  // Sauvegarde les modifications
             }
         }
     }
@@ -91,7 +94,8 @@ fun GroupListScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.height(200.dp))
 
@@ -109,45 +113,46 @@ fun GroupListScreen() {
                     groups.add(newGroup)
                     selectedIndex = groups.indexOf(newGroup)
 
+                    // Sauvegarder le nouveau groupe dans la liste
+                    saveGroups(context, groups)
+
                     val intent = Intent(context, GroupActivity::class.java)
                     intent.putExtra("group", newGroup)
                     launcher.launch(intent)
                 },
                 onDelete = { index ->
                     groups.removeAt(index)
+                    // Sauvegarder après suppression
+                    saveGroups(context, groups)
                 },
                 itemContent = { item, index, onDeleteClick ->
-                    Card(
-                        onClick = {
-                            selectedIndex = index
-                            val intent = Intent(context, GroupActivity::class.java)
-                            intent.putExtra("group", item)
-                            launcher.launch(intent)
-                        },
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                            .padding(vertical = 8.dp)
+                            .clickable {
+                                selectedIndex = index
+                                val intent = Intent(context, GroupActivity::class.java)
+                                intent.putExtra("group", item)
+                                launcher.launch(intent)
+                            },
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Image(
-                                painter = painterResource(id = item.imageResId),
-                                contentDescription = item.title,
-                                modifier = Modifier.size(48.dp),
-                                contentScale = ContentScale.Crop
+                        Image(
+                            painter = painterResource(id = item.imageResId),
+                            contentDescription = item.title,
+                            modifier = Modifier.size(48.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(text = item.title, fontSize = 20.sp)
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(onClick = onDeleteClick) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Supprimer",
+                                tint = Color.Red
                             )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(text = item.title, fontSize = 20.sp)
-                            Spacer(modifier = Modifier.weight(1f))
-                            IconButton(onClick = onDeleteClick) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Supprimer",
-                                    tint = Color.Red
-                                )
-                            }
                         }
                     }
                 }
