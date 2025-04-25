@@ -10,6 +10,7 @@ import com.example.myapplication.travel.Travel
 import com.example.myapplication.Ping
 import com.example.myapplication.group.Group
 import androidx.core.content.edit
+import kotlin.apply
 
 private const val PREF_NAME = "my_complex_data"
 private val gson = Gson()
@@ -43,6 +44,21 @@ fun getPings(context: Context): List<Ping> {
     val type = object : TypeToken<List<Ping>>() {}.type
     return gson.fromJson(json, type)
 }
+// Supprime le Ping des prefs en fonction des coordonnées
+fun removePingByCoordinates(context: Context, latitude: Double, longitude: Double) {
+    val prefs = getPrefs(context)
+    val json = prefs.getString("pings", null) ?: return
+    val type = object : TypeToken<List<Ping>>() {}.type
+    val pings: MutableList<Ping> = gson.fromJson(json, type)
+
+    val updatedPings = pings.filterNot {
+        it.latitude == latitude && it.longitude == longitude
+    }
+
+    prefs.edit().putString("pings", gson.toJson(updatedPings)).apply()
+}
+
+
 
 // ---------------------- VOYAGES ----------------------
 

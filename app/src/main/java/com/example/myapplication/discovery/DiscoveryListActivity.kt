@@ -1,6 +1,7 @@
 package com.example.myapplication.discovery
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -8,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
@@ -24,13 +26,20 @@ import androidx.compose.ui.unit.sp
 import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
+
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.Ping
+import com.google.gson.reflect.TypeToken
 import java.io.Serializable
+import com.example.myapplication.storage.removePingByCoordinates
 import com.example.myapplication.storage.getPings
+// Nouvelle version avec latitude & longitude
 data class Discovery(
     var title: String,
     var description: String,
-    var imageResId: Int
+    var imageResId: Int,
+    val latitude: Double,
+    val longitude: Double
 ) : Serializable
 
 class DiscoveryListActivity : ComponentActivity() {
@@ -44,6 +53,8 @@ class DiscoveryListActivity : ComponentActivity() {
     }
 }
 
+
+
 @Composable
 fun DiscoveryListScreen() {
     val context = LocalContext.current
@@ -55,7 +66,9 @@ fun DiscoveryListScreen() {
                 Discovery(
                     title = it.titre,
                     description = it.description,
-                    imageResId = R.drawable.cat03 // image par défaut
+                    imageResId = R.drawable.cat03, // image par défaut
+                    latitude = it.latitude,
+                    longitude = it.longitude
                 )
             })
         }
@@ -108,7 +121,12 @@ fun DiscoveryListScreen() {
             GenericListWithControls(
                 items = discoveries,
                 onAdd = {
-                    val newDiscovery = Discovery("Nouvelle découverte", "Description temporaire", R.drawable.cat03)
+                    val newDiscovery = Discovery(
+                        "Nouvelle découverte",
+                        "Description temporaire",
+                        R.drawable.cat03,
+                        0.0, 0.0 // coordonnées par défaut
+                    )
                     discoveries.add(newDiscovery)
                     selectedIndex = discoveries.indexOf(newDiscovery)
 
@@ -117,40 +135,38 @@ fun DiscoveryListScreen() {
                     launcher.launch(intent)
                 },
                 onDelete = { index ->
+                    val toRemove = discoveries[index]
                     discoveries.removeAt(index)
+                    removePingByCoordinates(context, toRemove.latitude, toRemove.longitude)
                 },
                 itemContent = { item, index, onDeleteClick ->
-                    Card(
-                        onClick = {
-                            selectedIndex = index
-                            val intent = Intent(context, DiscoveryActivity::class.java)
-                            intent.putExtra("discovery", item)
-                            launcher.launch(intent)
-                        },
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                            .padding(vertical = 8.dp)
+                            .clickable {
+                                selectedIndex = index
+                                val intent = Intent(context, DiscoveryActivity::class.java)
+                                intent.putExtra("discovery", item)
+                                launcher.launch(intent)
+                            },
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Image(
-                                painter = painterResource(id = item.imageResId),
-                                contentDescription = item.title,
-                                modifier = Modifier.size(48.dp),
-                                contentScale = ContentScale.Crop
+                        Image(
+                            painter = painterResource(id = item.imageResId),
+                            contentDescription = item.title,
+                            modifier = Modifier.size(48.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(text = item.title, fontSize = 20.sp)
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(onClick = onDeleteClick) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Supprimer",
+                                tint = Color.Red
                             )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(text = item.title, fontSize = 20.sp)
-                            Spacer(modifier = Modifier.weight(1f))
-                            IconButton(onClick = onDeleteClick) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Supprimer",
-                                    tint = Color.Red
-                                )
-                            }
                         }
                     }
                 }

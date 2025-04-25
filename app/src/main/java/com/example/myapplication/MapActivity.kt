@@ -189,7 +189,7 @@ fun MapScreen() {
                 val intent = Intent(context, DiscoveryActivity::class.java).apply {
                     putExtra(
                         "discovery",
-                        Discovery("Nouveau ping", "Description ici", R.drawable.cat03) // 🔁 Remplace par une vraie image
+                        Discovery("Nouveau ping", "Description ici", R.drawable.cat03, 0.0, 0.0) // coordonnées par défaut
                     )
                 }
                 launcher.launch(intent)
