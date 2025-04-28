@@ -4,6 +4,9 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -16,11 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.drawable.toDrawable
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
+import androidx.activity.result.ActivityResultLauncher
 import com.example.myapplication.discovery.Discovery
 import com.example.myapplication.discovery.DiscoveryActivity
 import com.example.myapplication.storage.getDiscoveries
@@ -35,6 +36,8 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import android.widget.Toast
+import com.example.myapplication.ScratchOverlay
 
 class MapActivity : ComponentActivity() {
     private val RequestPermissionsRequestCode = 1
@@ -59,7 +62,11 @@ class MapActivity : ComponentActivity() {
             ActivityCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
         if (permissionsToRequest.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), RequestPermissionsRequestCode)
+            ActivityCompat.requestPermissions(
+                this,
+                permissionsToRequest.toTypedArray(),
+                RequestPermissionsRequestCode
+            )
         }
     }
 }
@@ -82,6 +89,7 @@ fun MapScreen() {
                 val existing = getDiscoveries(context).toMutableList()
                 existing.add(newDiscovery)
                 saveDiscoveries(context, existing)
+                Toast.makeText(context, "Discovery added", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -95,24 +103,46 @@ fun MapScreen() {
                 modifier = Modifier.padding(innerPadding),
                 isFollowingLocation = isFollowingLocation,
                 onMapInteraction = { isFollowingLocation = false },
-                onLocationChanged = { lastKnownPoint = it }
+                onLocationChanged = { lastKnownPoint = it },
+                launcher = launcher
             )
         }
 
-        Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+        ) {
             MenuWithDropdown()
         }
 
-        Box(modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
             FollowButton(isFollowing = isFollowingLocation) {
                 isFollowingLocation = !isFollowingLocation
             }
         }
 
-        Box(modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        ) {
             Button(onClick = {
                 val intent = Intent(context, DiscoveryActivity::class.java).apply {
-                    putExtra("discovery", Discovery("Nouveau ping", "Description ici", R.drawable.cat03, lastKnownPoint.latitude, lastKnownPoint.longitude))
+                    putExtra(
+                        "discovery",
+                        Discovery(
+                            "Nouveau ping",
+                            "Description ici",
+                            R.drawable.cat03,
+                            lastKnownPoint.latitude,
+                            lastKnownPoint.longitude
+                        )
+                    )
                 }
                 launcher.launch(intent)
             }) {
@@ -134,12 +164,10 @@ fun Map(
     modifier: Modifier = Modifier,
     isFollowingLocation: Boolean,
     onMapInteraction: () -> Unit,
-    onLocationChanged: (GeoPoint) -> Unit
+    onLocationChanged: (GeoPoint) -> Unit,
+    launcher: ActivityResultLauncher<Intent>
 ) {
     val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
-    ) { }
 
     AndroidView(
         modifier = modifier,
@@ -148,18 +176,53 @@ fun Map(
                 setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
 
-                val myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), this)
+                // Création d'un provider de localisation
+                val gpsLocationProvider = GpsMyLocationProvider(context)
+                val myLocationOverlay = MyLocationNewOverlay(gpsLocationProvider, this)
                 myLocationOverlay.enableMyLocation()
                 overlays.add(myLocationOverlay)
 
                 controller.setZoom(15.0)
+
+                // Ajout du ScratchOverlay
+                val scratchOverlay = ScratchOverlay(this)
+                overlays.add(scratchOverlay)
+
+                // Suivi de la localisation initiale
                 myLocationOverlay.runOnFirstFix {
                     val location = myLocationOverlay.myLocation ?: GeoPoint(48.8583, 2.2944)
                     onLocationChanged(location)
                     post {
                         controller.setCenter(location)
                     }
+                    scratchOverlay.scratchAt(location) // Grattage GPS au premier fix
                 }
+
+                // Suivi de la position GPS avec LocationListener
+                val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                val locationListener = object : LocationListener {
+                    override fun onLocationChanged(location: Location) {
+                        val geoPoint = GeoPoint(location.latitude, location.longitude)
+                        scratchOverlay.scratchAt(geoPoint)  // Ajoute le grattage à chaque changement de localisation
+                        onLocationChanged(geoPoint)
+                    }
+
+                    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+                    override fun onProviderEnabled(provider: String) {}
+                    override fun onProviderDisabled(provider: String) {}
+                }
+
+                if (ActivityCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    return@apply
+                }
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, locationListener)
 
                 if (isFollowingLocation) {
                     myLocationOverlay.enableFollowLocation()
@@ -167,6 +230,7 @@ fun Map(
                     myLocationOverlay.disableFollowLocation()
                 }
 
+                // On n'écoute plus scroll/zoom pour scratch (c'était mauvais)
                 addMapListener(object : MapListener {
                     override fun onScroll(event: ScrollEvent?): Boolean {
                         onMapInteraction()
@@ -174,6 +238,7 @@ fun Map(
                     }
 
                     override fun onZoom(event: ZoomEvent?): Boolean {
+                        onMapInteraction()
                         overlays.removeIf { it is Marker && it.title != null }
                         addDiscoveryMarkers(this@apply, context, launcher)
                         return true
@@ -184,8 +249,11 @@ fun Map(
             }
         },
         update = { mapView ->
-            val myLocationOverlay = mapView.overlays.firstOrNull { it is MyLocationNewOverlay } as? MyLocationNewOverlay
-            myLocationOverlay?.myLocation?.let { onLocationChanged(it) }
+            val myLocationOverlay =
+                mapView.overlays.firstOrNull { it is MyLocationNewOverlay } as? MyLocationNewOverlay
+            myLocationOverlay?.myLocation?.let { location ->
+                onLocationChanged(location)
+            }
 
             if (isFollowingLocation) {
                 myLocationOverlay?.enableFollowLocation()
@@ -197,34 +265,13 @@ fun Map(
     )
 }
 
-fun addDiscoveryMarkers(
-    mapView: MapView,
-    context: Context,
-    launcher: androidx.activity.result.ActivityResultLauncher<Intent>
-) {
-    val savedDiscoveries = getDiscoveries(context)
-    val zoomLevel = mapView.zoomLevelDouble
-    val scaleFactor = (zoomLevel / 15.0).toFloat().coerceIn(0.5f, 2.0f)
-
-    val originalDrawable = ContextCompat.getDrawable(context, R.drawable.pinged)
-    val bitmap = originalDrawable?.let { drawable ->
-        val width = (drawable.intrinsicWidth * scaleFactor).toInt()
-        val height = (drawable.intrinsicHeight * scaleFactor).toInt()
-        val bitmap = createBitmap(width, height)
-        val canvas = android.graphics.Canvas(bitmap)
-        drawable.setBounds(0, 0, width, height)
-        drawable.draw(canvas)
-        bitmap
-    }
-
-    val scaledDrawable = bitmap?.toDrawable(context.resources)
-
-    savedDiscoveries.forEach { discovery ->
+private fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: ActivityResultLauncher<Intent>) {
+    val discoveries = getDiscoveries(context)
+    discoveries.forEach { discovery ->
         val marker = Marker(mapView).apply {
             position = GeoPoint(discovery.latitude, discovery.longitude)
             title = discovery.title
-            subDescription = discovery.description
-            icon = scaledDrawable
+            snippet = discovery.description
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             setOnMarkerClickListener { _, _ ->
                 val intent = Intent(context, DiscoveryActivity::class.java).apply {
@@ -236,6 +283,5 @@ fun addDiscoveryMarkers(
         }
         mapView.overlays.add(marker)
     }
-
     mapView.invalidate()
 }
