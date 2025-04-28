@@ -5,6 +5,8 @@ import android.view.ViewTreeObserver
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Overlay
+import com.example.myapplication.storage.getScratchedPoints
+import com.example.myapplication.storage.saveScratchedPoints
 
 class ScratchOverlay(private val mapView: MapView) : Overlay() {
 
@@ -39,8 +41,10 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
 
     fun scratchAt(point: GeoPoint) {
         scratchedPoints.add(point)
+        saveScratchedPoints(mapView.context, scratchedPoints)  // Sauvegarde des points à chaque rayure
         mapView.invalidate()
     }
+
 
     override fun draw(canvas: Canvas, mapView: MapView, shadow: Boolean) {
         if (shadow || overlayBitmap == null) return
@@ -71,13 +75,13 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
             val left = (screenWidth - scaledWidth) / 2f
             val top = (screenHeight - scaledHeight) / 2f
 
-            // Le cas où la barre de statut existe : l'image est centrée à partir du bord de la carte
             overlayCanvas?.drawBitmap(resizedBitmap, left, top, overlayPaint)
         }
 
+        // Dessiner tous les points découverts
         for (geoPoint in scratchedPoints) {
             val screenPoint = projection.toPixels(geoPoint, null)
-            val radius = projection.metersToEquatorPixels(50.0f) // Adjust radius based on zoom level
+            val radius = projection.metersToEquatorPixels(50.0f) // Ajuster le rayon en fonction du zoom
             overlayCanvas?.drawCircle(
                 screenPoint.x.toFloat(),
                 screenPoint.y.toFloat(),
@@ -89,4 +93,5 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
         canvas.drawBitmap(overlayBitmap!!, 0f, 0f, overlayPaint)
     }
 }
+
 
