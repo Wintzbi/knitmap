@@ -36,6 +36,20 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+
+
 class MapActivity : ComponentActivity() {
     private val RequestPermissionsRequestCode = 1
 
@@ -63,7 +77,6 @@ class MapActivity : ComponentActivity() {
         }
     }
 }
-
 @Composable
 fun MapScreen() {
     val context = LocalContext.current
@@ -99,24 +112,66 @@ fun MapScreen() {
             )
         }
 
-        Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
+        // Menu en haut à gauche
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+        ) {
             MenuWithDropdown()
         }
 
-        Box(modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+        // Bouton suivre en bas à droite
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
             FollowButton(isFollowing = isFollowingLocation) {
                 isFollowingLocation = !isFollowingLocation
             }
         }
 
-        Box(modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)) {
-            Button(onClick = {
-                val intent = Intent(context, DiscoveryActivity::class.java).apply {
-                    putExtra("discovery", Discovery("Nouveau ping", "Description ici", R.drawable.cat03, lastKnownPoint.latitude, lastKnownPoint.longitude))
+        // Nouveau bouton Ping en bas au centre
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp) // remonte le bouton
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                shadowElevation = 8.dp,
+                modifier = Modifier
+                    .size(80.dp)
+                    .clickable {
+                        val intent = Intent(context, DiscoveryActivity::class.java).apply {
+                            putExtra(
+                                "discovery",
+                                Discovery(
+                                    "Nouveau ping",
+                                    "Description ici",
+                                    R.drawable.cat03,
+                                    lastKnownPoint.latitude,
+                                    lastKnownPoint.longitude
+                                )
+                            )
+                        }
+                        launcher.launch(intent)
+                    }
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ping),
+                        contentDescription = "Ping",
+                        tint = Color.Unspecified, // pas de recoloration, conserve ton image
+                        modifier = Modifier.size(48.dp)
+                            .offset(x = 1.dp, y = (-3).dp)
+                    )
                 }
-                launcher.launch(intent)
-            }) {
-                Text("Ping")
             }
         }
     }
