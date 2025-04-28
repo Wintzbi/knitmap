@@ -14,7 +14,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -27,20 +26,22 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
     }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -49,9 +50,12 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("androidx.appcompat:appcompat:1.6.1")
+
+    implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("org.osmdroid:osmdroid-android:6.1.18")
-    implementation ("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation(libs.firebase.auth)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -61,3 +65,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+
+apply(plugin = "com.google.gms.google-services")
