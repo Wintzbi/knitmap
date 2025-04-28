@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 import android.content.Intent
+import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -73,6 +74,25 @@ fun MenuWithDropdown() {
                     context.startActivity(Intent(context, DiscoveryListActivity::class.java))
                 }
             )
+            DropdownMenuItem(
+                text = { Text("Découverte") },
+                onClick = {
+                    expanded = false
+                    context.startActivity(Intent(context, DiscoveryListActivity::class.java))
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Déconnexion") },
+                onClick = {
+                    expanded = false
+                    FirebaseAuth.getInstance().signOut() // <- Déconnecte l'utilisateur
+                    val logoutIntent = Intent(context, MainActivity::class.java)
+                    logoutIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    context.startActivity(logoutIntent)
+                }
+            )
+
+
         }
     }
 }
