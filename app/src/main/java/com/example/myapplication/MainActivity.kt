@@ -18,24 +18,37 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.example.myapplication.MenuWithDropdown
 
 
+import com.google.firebase.auth.FirebaseAuth
+
 class MainActivity : ComponentActivity() {
+    private lateinit var auth: FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        auth = FirebaseAuth.getInstance()
+
+        if (auth.currentUser != null) {
+            val intent = Intent(this, MapActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+
         setContent {
             MyApplicationTheme {
-                // Contenu de l'écran de connexion
-                LoginScreen()
+                LoginScreen(auth)
             }
         }
     }
 }
 
+
 @Composable
-fun LoginScreen() {
+fun LoginScreen(auth: FirebaseAuth) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Contexte utilisé pour lancer l'activité
     val context = LocalContext.current
 
     Column(
@@ -48,17 +61,15 @@ fun LoginScreen() {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Champ de texte pour le nom d'utilisateur
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Nom d'utilisateur") },
+            label = { Text("Email utilisateur") },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Champ de texte pour le mot de passe
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -67,28 +78,65 @@ fun LoginScreen() {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Bouton de connexion
+        errorMessage?.let {
+            Text(it, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         Button(
             onClick = {
-                if (username == "admin" && password == "admin") {
-                    // Si la connexion est réussie, on lance MapActivity
-                    val intent = Intent(context, MapActivity::class.java)
-                    context.startActivity(intent)
-                }
+                auth.signInWithEmailAndPassword(username, password)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val intent = Intent(context, MapActivity::class.java)
+                            context.startActivity(intent)
+                        } else {
+                            errorMessage = "Échec de la connexion : ${task.exception?.localizedMessage}"
+                        }
+                    }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Se connecter")
         }
+
+        Spacer(modifier = Modifier.height(8.dp)) // <-- Ajoute un petit espace entre les deux boutons
+
+        TextButton(
+            onClick = {
+                auth.createUserWithEmailAndPassword(username, password)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val intent = Intent(context, MapActivity::class.java)
+                            context.startActivity(intent)
+                        } else {
+                            errorMessage = "Échec de l'inscription : ${task.exception?.localizedMessage}"
+                        }
+                    }
+            },
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            Text(
+                "Créer un compte",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+
+
     }
 }
+
+
 
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoginScreen() {
     MyApplicationTheme {
-        LoginScreen()
+        // Attention : pour le preview, on ne peut pas utiliser FirebaseAuth réellement,
+        // donc on passe une version factice ou on ignore l'aperçu pour cette fonction.
+        Text("Preview désactivé car FirebaseAuth requis")
     }
 }
