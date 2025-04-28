@@ -75,13 +75,6 @@ fun MenuWithDropdown() {
                 }
             )
             DropdownMenuItem(
-                text = { Text("Découverte") },
-                onClick = {
-                    expanded = false
-                    context.startActivity(Intent(context, DiscoveryListActivity::class.java))
-                }
-            )
-            DropdownMenuItem(
                 text = { Text("Déconnexion") },
                 onClick = {
                     expanded = false
