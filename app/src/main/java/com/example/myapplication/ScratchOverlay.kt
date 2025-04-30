@@ -7,13 +7,15 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Overlay
 import com.example.myapplication.storage.getScratchedPoints
 import com.example.myapplication.storage.saveScratchedPoints
+import com.example.myapplication.discovery.Discovery
+import com.example.myapplication.storage.getDiscoveries
 
 class ScratchOverlay(private val mapView: MapView) : Overlay() {
 
     private var overlayBitmap: Bitmap? = null
     private var overlayCanvas: Canvas? = null
     private val overlayPaint = Paint()
-
+    val savedDiscoveries = getDiscoveries(mapView.context)
     private val scratchPaint = Paint().apply {
         isAntiAlias = true
         xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR) // Mode effacement
@@ -89,6 +91,21 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
                 scratchPaint
             )
         }
+// Dessiner tous les marqueurs sur la carte à partir des Discovery
+        for (discovery in savedDiscoveries) {
+            if (!discovery.latitude.isFinite() || !discovery.longitude.isFinite()) continue
+            val geoPoint = GeoPoint(discovery.latitude, discovery.longitude)  // Création du GeoPoint correctement
+            val screenPoint = projection.toPixels(geoPoint, null)
+            val radius = projection.metersToEquatorPixels(100.0f) // Ajuster le rayon selon le zoom
+            overlayCanvas?.drawCircle(
+                screenPoint.x.toFloat(),
+                screenPoint.y.toFloat(),
+                radius,
+                scratchPaint
+            )
+        }
+
+
 
         canvas.drawBitmap(overlayBitmap!!, 0f, 0f, overlayPaint)
     }

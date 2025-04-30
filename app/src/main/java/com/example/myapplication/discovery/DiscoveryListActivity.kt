@@ -64,6 +64,7 @@ fun DiscoveryListScreen() {
     val discoveries = remember {
         mutableStateListOf<Discovery>().apply {
             val savedDiscoveries = getDiscoveries(context)
+            
             addAll(savedDiscoveries)
         }
     }
