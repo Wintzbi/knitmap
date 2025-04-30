@@ -21,8 +21,9 @@ import com.example.myapplication.R
 import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import com.example.myapplication.BaseActivity
 
-class FriendsActivity : ComponentActivity() {
+class FriendsActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

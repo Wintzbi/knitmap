@@ -21,9 +21,10 @@ import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import com.example.myapplication.BaseActivity
 import com.example.myapplication.storage.removeTravelByTitle
 
-class TravelActivity : ComponentActivity() {
+class TravelActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

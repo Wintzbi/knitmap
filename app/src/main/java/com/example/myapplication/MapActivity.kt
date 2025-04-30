@@ -8,20 +8,26 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
-import androidx.activity.result.ActivityResultLauncher
+import androidx.core.content.ContextCompat
 import com.example.myapplication.discovery.Discovery
 import com.example.myapplication.discovery.DiscoveryActivity
 import com.example.myapplication.storage.getDiscoveries
@@ -36,29 +42,25 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-import android.widget.Toast
-
-
-
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
+
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
 
-class MapActivity : ComponentActivity() {
+class MapActivity : BaseActivity() {
     private val RequestPermissionsRequestCode = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Cacher les barres système : plein écran immersif
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+
         requestPermissionsIfNecessary(
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
@@ -86,16 +88,18 @@ class MapActivity : ComponentActivity() {
     }
 }
 
+
 @Composable
 fun MapScreen() {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
     var isFollowingLocation by remember { mutableStateOf(false) }
     var lastKnownPoint by remember { mutableStateOf(GeoPoint(48.8583, 2.2944)) }
+    val mapViewRef = remember { mutableStateOf<MapView?>(null) }
 
     val launcher = rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
-    ) { result ->
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result: androidx.activity.result.ActivityResult ->
         if (result.resultCode == ComponentActivity.RESULT_OK) {
             val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
             if (updated != null) {
@@ -109,6 +113,7 @@ fun MapScreen() {
         }
     }
 
+
     Box(modifier = Modifier.fillMaxSize()) {
         val configuration = Configuration.getInstance()
         configuration.load(context, context.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
@@ -117,13 +122,17 @@ fun MapScreen() {
             Map(
                 modifier = Modifier.padding(innerPadding),
                 isFollowingLocation = isFollowingLocation,
-                onMapInteraction = { isFollowingLocation = false },
+                onMapInteraction = {
+                    if (!isFollowingLocation) {
+                        isFollowingLocation = false
+                    }
+                },
                 onLocationChanged = { lastKnownPoint = it },
-                launcher = launcher
+                launcher = launcher,
+                mapViewRef = mapViewRef
             )
         }
 
-        // Menu en haut à gauche
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -132,7 +141,6 @@ fun MapScreen() {
             MenuWithDropdown()
         }
 
-        // Bouton suivre en bas à droite
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -140,14 +148,17 @@ fun MapScreen() {
         ) {
             FollowButton(isFollowing = isFollowingLocation) {
                 isFollowingLocation = !isFollowingLocation
+                if (isFollowingLocation) {
+                    mapViewRef.value?.controller?.setZoom(17.5)
+                    mapViewRef.value?.controller?.animateTo(lastKnownPoint)
+                }
             }
         }
 
-        // Nouveau bouton Ping en bas au centre
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp) // remonte le bouton
+                .padding(bottom = 80.dp)
         ) {
             Surface(
                 shape = CircleShape,
@@ -159,39 +170,22 @@ fun MapScreen() {
                         val intent = Intent(context, DiscoveryActivity::class.java).apply {
                             putExtra(
                                 "discovery",
-                                Discovery(
-                                    "Nouveau ping",
-                                    "Description ici",
-                                    R.drawable.cat03,
-                                    lastKnownPoint.latitude,
-                                    lastKnownPoint.longitude
-                                )
+                                Discovery("Nouveau ping", "Description ici", R.drawable.cat03, lastKnownPoint.latitude, lastKnownPoint.longitude)
                             )
                         }
                         launcher.launch(intent)
                     }
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         painter = painterResource(id = R.drawable.ping),
                         contentDescription = "Ping",
-                        tint = Color.Unspecified, // pas de recoloration, conserve ton image
-                        modifier = Modifier.size(48.dp)
-                            .offset(x = 1.dp, y = (-3).dp)
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(48.dp).offset(x = 1.dp, y = (-3).dp)
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun FollowButton(isFollowing: Boolean, onClick: () -> Unit) {
-    Button(onClick = onClick) {
-        Text(if (isFollowing) "Arrêter" else "Suivre")
     }
 }
 
@@ -201,7 +195,8 @@ fun Map(
     isFollowingLocation: Boolean,
     onMapInteraction: () -> Unit,
     onLocationChanged: (GeoPoint) -> Unit,
-    launcher: ActivityResultLauncher<Intent>
+    launcher: ActivityResultLauncher<Intent>,
+    mapViewRef: MutableState<MapView?>
 ) {
     val context = LocalContext.current
 
@@ -209,10 +204,11 @@ fun Map(
         modifier = modifier,
         factory = { mapContext ->
             MapView(mapContext).apply {
+                mapViewRef.value = this
+
                 setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
 
-                // Création d'un provider de localisation
                 val gpsLocationProvider = GpsMyLocationProvider(context)
                 val myLocationOverlay = MyLocationNewOverlay(gpsLocationProvider, this)
                 myLocationOverlay.enableMyLocation()
@@ -220,26 +216,24 @@ fun Map(
 
                 controller.setZoom(15.0)
 
-                // Ajout du ScratchOverlay
                 val scratchOverlay = ScratchOverlay(this)
                 overlays.add(scratchOverlay)
 
-                // Suivi de la localisation initiale
                 myLocationOverlay.runOnFirstFix {
                     val location = myLocationOverlay.myLocation ?: GeoPoint(48.8583, 2.2944)
                     onLocationChanged(location)
                     post {
                         controller.setCenter(location)
+                        controller.setZoom(17.5)
                     }
-                    scratchOverlay.scratchAt(location) // Grattage GPS au premier fix
+                    scratchOverlay.scratchAt(location)
                 }
 
-                // Suivi de la position GPS avec LocationListener
                 val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
                 val locationListener = object : LocationListener {
                     override fun onLocationChanged(location: Location) {
                         val geoPoint = GeoPoint(location.latitude, location.longitude)
-                        scratchOverlay.scratchAt(geoPoint)  // Ajoute le grattage à chaque changement de localisation
+                        scratchOverlay.scratchAt(geoPoint)
                         onLocationChanged(geoPoint)
                     }
 
@@ -248,14 +242,8 @@ fun Map(
                     override fun onProviderDisabled(provider: String) {}
                 }
 
-                if (ActivityCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
+                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     return@apply
                 }
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, locationListener)
@@ -266,7 +254,6 @@ fun Map(
                     myLocationOverlay.disableFollowLocation()
                 }
 
-                // On n'écoute plus scroll/zoom pour scratch (c'était mauvais)
                 addMapListener(object : MapListener {
                     override fun onScroll(event: ScrollEvent?): Boolean {
                         onMapInteraction()
@@ -293,12 +280,26 @@ fun Map(
 
             if (isFollowingLocation) {
                 myLocationOverlay?.enableFollowLocation()
-                myLocationOverlay?.myLocation?.let { mapView.controller.animateTo(it) }
+                myLocationOverlay?.myLocation?.let {
+                    mapView.controller.setZoom(17.5)
+                    mapView.controller.animateTo(it)
+                }
             } else {
                 myLocationOverlay?.disableFollowLocation()
             }
         }
     )
+}
+
+@Composable
+fun FollowButton(isFollowing: Boolean, onClick: () -> Unit) {
+    val buttonColor = if (isFollowing) Color.Red else Color.Green
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
+    ) {
+        Text(if (isFollowing) "Arrêter" else "Suivre")
+    }
 }
 
 private fun addDiscoveryMarkers(
@@ -328,4 +329,3 @@ private fun addDiscoveryMarkers(
     }
     mapView.invalidate()
 }
-

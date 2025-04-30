@@ -22,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.rememberLauncherForActivityResult
+import com.example.myapplication.BaseActivity
 import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
@@ -36,7 +37,7 @@ data class Friend(
     var imageResId: Int
 ) : java.io.Serializable
 
-class FriendListActivity : ComponentActivity() {
+class FriendListActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

@@ -9,6 +9,8 @@ import com.example.myapplication.storage.getScratchedPoints
 import com.example.myapplication.storage.saveScratchedPoints
 import com.example.myapplication.discovery.Discovery
 import com.example.myapplication.storage.getDiscoveries
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 
 class ScratchOverlay(private val mapView: MapView) : Overlay() {
 
@@ -33,7 +35,7 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
         mapView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
                 mapView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                overlayBitmap = Bitmap.createBitmap(mapView.width, mapView.height, Bitmap.Config.ARGB_8888).apply {
+                overlayBitmap = createBitmap(mapView.width, mapView.height).apply {
                     eraseColor(Color.GRAY) // Fond gris par défaut
                 }
                 overlayCanvas = overlayBitmap?.let { Canvas(it) }
@@ -71,7 +73,7 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
             val scaledHeight = (imageHeight * scaleFactor).toInt()
 
             // Créer le Bitmap redimensionné
-            val resizedBitmap = Bitmap.createScaledBitmap(it, scaledWidth, scaledHeight, false)
+            val resizedBitmap = it.scale(scaledWidth, scaledHeight, false)
 
             // Dessiner l'image redimensionnée pour qu'elle couvre la carte
             val left = (screenWidth - scaledWidth) / 2f
