@@ -21,7 +21,7 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
         style = Paint.Style.FILL
     }
 
-    private val scratchedPoints = mutableListOf<GeoPoint>()
+    private val scratchedPoints = getScratchedPoints(mapView.context).toMutableList() // Charge les poinrs découvert enregistrés
     private var imageBitmap: Bitmap? = null // Bitmap pour l'image à ajouter
 
     init {

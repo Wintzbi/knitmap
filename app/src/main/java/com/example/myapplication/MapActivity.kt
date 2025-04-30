@@ -37,7 +37,7 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import android.widget.Toast
-import com.example.myapplication.ScratchOverlay
+
 
 
 import androidx.activity.compose.rememberLauncherForActivityResult
