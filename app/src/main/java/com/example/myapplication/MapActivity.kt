@@ -51,6 +51,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 
 
 class MapActivity : ComponentActivity() {
@@ -300,14 +301,21 @@ fun Map(
     )
 }
 
-private fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: ActivityResultLauncher<Intent>) {
+private fun addDiscoveryMarkers(
+    mapView: MapView,
+    context: Context,
+    launcher: ActivityResultLauncher<Intent>
+) {
     val discoveries = getDiscoveries(context)
+    val iconDrawable = ContextCompat.getDrawable(context, R.drawable.pinged)
+
     discoveries.forEach { discovery ->
         val marker = Marker(mapView).apply {
             position = GeoPoint(discovery.latitude, discovery.longitude)
             title = discovery.title
             snippet = discovery.description
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            icon = iconDrawable
             setOnMarkerClickListener { _, _ ->
                 val intent = Intent(context, DiscoveryActivity::class.java).apply {
                     putExtra("discovery", discovery)
@@ -320,3 +328,4 @@ private fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: Ac
     }
     mapView.invalidate()
 }
+
