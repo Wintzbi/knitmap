@@ -47,6 +47,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.Image
 
 
 class MapActivity : BaseActivity() {
@@ -88,7 +90,6 @@ class MapActivity : BaseActivity() {
     }
 }
 
-
 @Composable
 fun MapScreen() {
     val context = LocalContext.current
@@ -112,7 +113,6 @@ fun MapScreen() {
             }
         }
     }
-
 
     Box(modifier = Modifier.fillMaxSize()) {
         val configuration = Configuration.getInstance()
@@ -155,40 +155,47 @@ fun MapScreen() {
             }
         }
 
+        // Image en bas de l'écran, alignée au bas et couvrant toute la largeur
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp)
+                .fillMaxWidth()
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary,
-                shadowElevation = 8.dp,
+            // Image de fond
+            Image(
+                painter = painterResource(id = R.drawable.map_fond_bouton),
+                contentDescription = "Footer Background",
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(80.dp)
-                    .clickable {
-                        val intent = Intent(context, DiscoveryActivity::class.java).apply {
-                            putExtra(
-                                "discovery",
-                                Discovery("Nouveau ping", "Description ici", R.drawable.cat03, lastKnownPoint.latitude, lastKnownPoint.longitude)
-                            )
-                        }
-                        launcher.launch(intent)
+                    .fillMaxWidth()
+                    .height(80.dp)
+            )
+
+            // Bouton icône sans fond, centré sur l'image
+            IconButton(
+                onClick = {
+                    val intent = Intent(context, DiscoveryActivity::class.java).apply {
+                        putExtra(
+                            "discovery",
+                            Discovery("Nouveau ping", "Description ici", R.drawable.cat03, lastKnownPoint.latitude, lastKnownPoint.longitude)
+                        )
                     }
+                    launcher.launch(intent)
+                },
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(60.dp)
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ping),
-                        contentDescription = "Ping",
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(48.dp).offset(x = 1.dp, y = (-3).dp)
-                    )
-                }
+                Icon(
+                    painter = painterResource(id = R.drawable.ping),
+                    contentDescription = "Add Discovery",
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(48.dp)
+                )
             }
         }
     }
 }
-
 @Composable
 fun Map(
     modifier: Modifier = Modifier,
@@ -216,8 +223,10 @@ fun Map(
 
                 controller.setZoom(15.0)
 
+                // Ajout du ScratchOverlay avec une priorité inférieure pour qu'il soit sous l'UI
                 val scratchOverlay = ScratchOverlay(this)
-                overlays.add(scratchOverlay)
+                // Assurez-vous d'ajouter le scratch overlay en premier (il sera dessiné en premier, donc en dessous)
+                overlays.add(0, scratchOverlay)
 
                 myLocationOverlay.runOnFirstFix {
                     val location = myLocationOverlay.myLocation ?: GeoPoint(48.8583, 2.2944)
