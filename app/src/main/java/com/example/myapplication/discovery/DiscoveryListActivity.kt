@@ -1,10 +1,8 @@
 package com.example.myapplication.discovery
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -29,7 +27,6 @@ import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
 import com.example.myapplication.ui.theme.MyApplicationTheme
-import com.example.myapplication.storage.removeDiscoveryByCoordinates
 import com.example.myapplication.storage.getDiscoveries
 import com.example.myapplication.storage.saveDiscoveries
 import java.io.Serializable
@@ -63,12 +60,13 @@ fun DiscoveryListScreen() {
         }
     }
 
-    var selectedIndex by remember { mutableStateOf(-1) }
+    var selectedIndex by remember { mutableIntStateOf(-1) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
+            @Suppress("DEPRECATION")
             val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
             if (updated != null && selectedIndex in discoveries.indices) {
                 discoveries[selectedIndex] = updated

@@ -16,7 +16,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,7 +43,6 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import androidx.activity.compose.rememberLauncherForActivityResult
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
 
 import androidx.core.content.FileProvider
 import java.io.File
@@ -61,7 +59,7 @@ import androidx.compose.foundation.Image
 
 
 class MapActivity : BaseActivity() {
-    private val RequestPermissionsRequestCode = 1
+    private val requestPermissionsRequestCode = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,7 +91,7 @@ class MapActivity : BaseActivity() {
             ActivityCompat.requestPermissions(
                 this,
                 permissionsToRequest.toTypedArray(),
-                RequestPermissionsRequestCode
+                requestPermissionsRequestCode
             )
         }
     }
@@ -114,6 +112,7 @@ fun MapScreen() {
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == ComponentActivity.RESULT_OK) {
+            @Suppress("DEPRECATION")
             val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
             if (updated != null) {
                 val location = lastKnownPoint

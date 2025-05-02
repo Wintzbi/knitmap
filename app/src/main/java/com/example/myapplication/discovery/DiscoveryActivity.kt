@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,12 +30,14 @@ import java.util.*
 import androidx.core.content.FileProvider
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 
 class DiscoveryActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        @Suppress("DEPRECATION")
         val discovery = intent.getSerializableExtra("discovery") as? Discovery
 
         setContent {
@@ -110,7 +111,7 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                 (context as? ComponentActivity)?.finish()
             }) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Retour",
                     tint = Color.White
                 )
