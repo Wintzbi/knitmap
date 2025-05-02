@@ -11,6 +11,7 @@ import com.example.myapplication.group.Group
 import androidx.core.content.edit
 import kotlin.apply
 import com.example.myapplication.discovery.Discovery
+import org.osmdroid.util.GeoPoint
 
 private const val PREF_NAME = "my_complex_data"
 private val gson = Gson()
@@ -129,4 +130,15 @@ fun removeGroupByName(context: Context, groupName: String) {
 
     // Sauvegarder la liste mise à jour
     prefs.edit().putString("groups", Gson().toJson(updatedGroups)).apply()
+}
+
+
+fun saveScratchedPoints(context: Context, scratchedPoints: List<GeoPoint>) {
+    val json = gson.toJson(scratchedPoints)
+    getPrefs(context).edit { putString("scratchedPoints", json) }
+}
+fun getScratchedPoints(context: Context): List<GeoPoint> {
+    val json = getPrefs(context).getString("scratchedPoints", null) ?: return emptyList()
+    val type = object : TypeToken<List<GeoPoint>>() {}.type
+    return gson.fromJson(json, type)
 }

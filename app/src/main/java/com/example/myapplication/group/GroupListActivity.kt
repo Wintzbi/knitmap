@@ -22,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.rememberLauncherForActivityResult
+import com.example.myapplication.BaseActivity
 import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
@@ -38,7 +39,7 @@ data class Group(
     val amis: List<Friend> = emptyList()
 ) : java.io.Serializable
 
-class GroupListActivity : ComponentActivity() {
+class GroupListActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

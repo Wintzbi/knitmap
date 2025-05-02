@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.BaseActivity
 import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
@@ -43,7 +44,7 @@ data class Discovery(
     val longitude: Double
 ) : Serializable
 
-class DiscoveryListActivity : ComponentActivity() {
+class DiscoveryListActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -64,6 +65,7 @@ fun DiscoveryListScreen() {
     val discoveries = remember {
         mutableStateListOf<Discovery>().apply {
             val savedDiscoveries = getDiscoveries(context)
+            
             addAll(savedDiscoveries)
         }
     }
