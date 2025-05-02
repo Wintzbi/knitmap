@@ -95,6 +95,32 @@ class MapActivity : BaseActivity() {
         }
     }
 }
+// Bouton Ping
+@Composable
+fun PingImageButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier // Ajoute d'un paramètre pour modifier pos
+) {
+    Box(
+        modifier = modifier
+            .size(80.dp)
+            .background(
+                color = Color(0xFFFBED),
+                shape = CircleShape
+
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ping),
+            contentDescription = "Ajouter un ping",
+            tint = Color.Unspecified,
+            modifier = Modifier.size(48.dp)
+        )
+    }
+}
+
 
 @Composable
 fun MapScreen() {
@@ -253,23 +279,12 @@ fun MapScreen() {
             )
 
             // Bouton ping qui lance la caméra
-            Box(
+            PingImageButton(
+                onClick = { startCameraIntent() },
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .size(80.dp)
-                    .clickable {
-                        startCameraIntent()
-                    }
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ping),
-                    contentDescription = "Add Discovery",
-                    tint = Color.Unspecified,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .align(Alignment.Center)
-                )
-            }
+                    .offset(y = (-10).dp, x = (10).dp) // ajuste la valeur ici pour bien centrer
+            )
         }
     }
 }
