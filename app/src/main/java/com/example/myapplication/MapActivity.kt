@@ -43,10 +43,19 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import androidx.activity.compose.rememberLauncherForActivityResult
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+
+import androidx.core.content.FileProvider
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
+
 
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+
 
 
 class MapActivity : BaseActivity() {
@@ -97,22 +106,63 @@ fun MapScreen() {
     var lastKnownPoint by remember { mutableStateOf(GeoPoint(48.8583, 2.2944)) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
 
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
-    ) { result: androidx.activity.result.ActivityResult ->
+    ) { result ->
         if (result.resultCode == ComponentActivity.RESULT_OK) {
             val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
             if (updated != null) {
                 val location = lastKnownPoint
-                val newDiscovery = updated.copy(latitude = location.latitude, longitude = location.longitude)
+                val newDiscovery = updated.copy(
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    imageUri = updated.imageUri
+                )
                 val existing = getDiscoveries(context).toMutableList()
                 existing.add(newDiscovery)
                 saveDiscoveries(context, existing)
-                Toast.makeText(context, "Discovery added", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Discovery ajoutée", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    // Lancer DiscoveryActivity avec ou sans image selon que l’utilisateur a pris une photo
+    fun launchDiscoveryWithImage(uri: Uri?) {
+        val discovery = Discovery(
+            title = "Nouveau ping",
+            description = "Description ici",
+            imageResId = R.drawable.cat03,
+            imageUri = uri?.toString(),
+            latitude = lastKnownPoint.latitude,
+            longitude = lastKnownPoint.longitude
+        )
+        val intent = Intent(context, DiscoveryActivity::class.java).apply {
+            putExtra("discovery", discovery)
+        }
+        launcher.launch(intent)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success && photoUri != null) {
+            launchDiscoveryWithImage(photoUri)
+        } else {
+            // Si annulation => image par défaut
+            launchDiscoveryWithImage(null)
+        }
+    }
+
+    fun startCameraIntent() {
+        val photoFile = File.createTempFile(
+            "IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}",
+            ".jpg",
+            context.cacheDir
+        )
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", photoFile)
+        photoUri = uri
+        cameraLauncher.launch(uri)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val configuration = Configuration.getInstance()
@@ -133,19 +183,11 @@ fun MapScreen() {
             )
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-        ) {
+        Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
             MenuWithDropdown()
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
+        Box(modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
             FollowButton(isFollowing = isFollowingLocation) {
                 isFollowingLocation = !isFollowingLocation
                 if (isFollowingLocation) {
@@ -155,11 +197,7 @@ fun MapScreen() {
             }
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp)
-        ) {
+        Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp)) {
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primary,
@@ -167,13 +205,7 @@ fun MapScreen() {
                 modifier = Modifier
                     .size(80.dp)
                     .clickable {
-                        val intent = Intent(context, DiscoveryActivity::class.java).apply {
-                            putExtra(
-                                "discovery",
-                                Discovery("Nouveau ping", "Description ici", R.drawable.cat03, lastKnownPoint.latitude, lastKnownPoint.longitude)
-                            )
-                        }
-                        launcher.launch(intent)
+                        startCameraIntent()
                     }
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -293,7 +325,7 @@ fun Map(
 
 @Composable
 fun FollowButton(isFollowing: Boolean, onClick: () -> Unit) {
-    val buttonColor = if (isFollowing) Color.Red else Color.Green
+    val buttonColor = if (isFollowing) Color(red=228, green = 70,blue=67) else Color(red=27, green = 171,blue=66)
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(containerColor = buttonColor)

@@ -23,23 +23,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.BaseActivity
 import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
-
 import com.example.myapplication.ui.theme.MyApplicationTheme
-
-import com.google.gson.reflect.TypeToken
-import java.io.Serializable
 import com.example.myapplication.storage.removeDiscoveryByCoordinates
 import com.example.myapplication.storage.getDiscoveries
 import com.example.myapplication.storage.saveDiscoveries
-// Nouvelle version avec latitude & longitude
+import java.io.Serializable
+
 data class Discovery(
     var title: String,
     var description: String,
-    var imageResId: Int,
+    var imageResId: Int = R.drawable.cat03,
+    var imageUri: String? = null,
     val latitude: Double,
     val longitude: Double
 ) : Serializable
@@ -55,18 +54,12 @@ class DiscoveryListActivity : BaseActivity() {
     }
 }
 
-
-
 @Composable
 fun DiscoveryListScreen() {
     val context = LocalContext.current
-
-    // Chargement des découvertes depuis les préférences
     val discoveries = remember {
         mutableStateListOf<Discovery>().apply {
-            val savedDiscoveries = getDiscoveries(context)
-            
-            addAll(savedDiscoveries)
+            addAll(getDiscoveries(context))
         }
     }
 
@@ -79,7 +72,7 @@ fun DiscoveryListScreen() {
             val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
             if (updated != null && selectedIndex in discoveries.indices) {
                 discoveries[selectedIndex] = updated
-                saveDiscoveries(context, discoveries)  // Sauvegarde les modifications
+                saveDiscoveries(context, discoveries)
             }
         }
     }
@@ -92,51 +85,31 @@ fun DiscoveryListScreen() {
             contentScale = ContentScale.Crop
         )
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-        ) {
+        Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
             MenuWithDropdown()
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.height(200.dp))
 
-            Text(
-                "Découvertes",
-                fontSize = 32.sp,
-                color = Color(0xFF4E7072).copy(alpha = 0.8f),
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            Text("Découvertes", fontSize = 32.sp, color = Color(0xFF4E7072).copy(alpha = 0.8f), modifier = Modifier.padding(bottom = 16.dp))
 
             GenericListWithControls(
                 items = discoveries,
                 onAdd = {
-                    val newDiscovery = Discovery(
-                        "Nouvelle découverte",
-                        "Description temporaire",
-                        R.drawable.cat03,
-                        0.0, 0.0 // coordonnées par défaut
-                    )
+                    val newDiscovery = Discovery("Nouvelle découverte", "Description temporaire", R.drawable.cat03, null, 0.0, 0.0)
                     discoveries.add(newDiscovery)
                     selectedIndex = discoveries.indexOf(newDiscovery)
-
-                    // Sauvegarder la nouvelle découverte dans la liste
                     saveDiscoveries(context, discoveries)
-
                     val intent = Intent(context, DiscoveryActivity::class.java)
                     intent.putExtra("discovery", newDiscovery)
                     launcher.launch(intent)
                 },
                 onDelete = { index ->
                     discoveries.removeAt(index)
-                    // Sauvegarder après suppression
                     saveDiscoveries(context, discoveries)
                 },
                 itemContent = { item, index, onDeleteClick ->
@@ -152,21 +125,23 @@ fun DiscoveryListScreen() {
                             },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val painter = if (item.imageUri != null)
+                            rememberAsyncImagePainter(model = item.imageUri)
+                        else
+                            painterResource(id = item.imageResId)
+
                         Image(
-                            painter = painterResource(id = item.imageResId),
+                            painter = painter,
                             contentDescription = item.title,
                             modifier = Modifier.size(48.dp),
                             contentScale = ContentScale.Crop
                         )
+
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(text = item.title, fontSize = 20.sp)
                         Spacer(modifier = Modifier.weight(1f))
                         IconButton(onClick = onDeleteClick) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Supprimer",
-                                tint = Color.Red
-                            )
+                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Supprimer", tint = Color.Red)
                         }
                     }
                 }
