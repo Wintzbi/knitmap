@@ -132,6 +132,7 @@ fun removeGroupByName(context: Context, groupName: String) {
     prefs.edit().putString("groups", Gson().toJson(updatedGroups)).apply()
 }
 
+// ---------------------- Scratch ----------------------
 
 fun saveScratchedPoints(context: Context, scratchedPoints: List<GeoPoint>) {
     val json = gson.toJson(scratchedPoints)
@@ -141,4 +142,19 @@ fun getScratchedPoints(context: Context): List<GeoPoint> {
     val json = getPrefs(context).getString("scratchedPoints", null) ?: return emptyList()
     val type = object : TypeToken<List<GeoPoint>>() {}.type
     return gson.fromJson(json, type)
+}
+
+// ---------------------- LastknowPoint ----------------------
+fun saveLastKnownPoint(context: Context, lastKnownPoint: GeoPoint) {
+    val json = gson.toJson(lastKnownPoint)
+    getPrefs(context).edit { putString("lastKnownPoint", json) }
+}
+
+fun getLastKnownPoint(context: Context): GeoPoint? {
+    val json = getPrefs(context).getString("lastKnownPoint", null) ?: return null
+    return gson.fromJson(json, GeoPoint::class.java)
+}
+
+fun removeLastKnownPoint(context: Context){
+    getPrefs(context).edit { remove("lastKnownPoint")}
 }
