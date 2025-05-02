@@ -106,15 +106,8 @@ fun LoginScreen(auth: FirebaseAuth) {
 
         TextButton(
             onClick = {
-                auth.createUserWithEmailAndPassword(username, password)
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            val intent = Intent(context, MapActivity::class.java)
-                            context.startActivity(intent)
-                        } else {
-                            errorMessage = "Échec de l'inscription : ${task.exception?.localizedMessage}"
-                        }
-                    }
+                val intent = Intent(context, RegisterActivity::class.java)
+                context.startActivity(intent)
             },
             modifier = Modifier.padding(top = 8.dp)
         ) {
@@ -125,8 +118,9 @@ fun LoginScreen(auth: FirebaseAuth) {
             )
         }
 
-
     }
+
+
 }
 
 

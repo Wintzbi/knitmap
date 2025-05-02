@@ -51,12 +51,18 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
-    implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // Autres libs
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("io.coil-kt:coil-compose:2.4.0")
-    implementation(libs.firebase.auth)
+
+    // Supprime cette ligne redondante si elle pointe vers une autre version :
+    // implementation(libs.firebase.auth)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -66,5 +72,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+
 
 apply(plugin = "com.google.gms.google-services")

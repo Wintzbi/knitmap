@@ -47,6 +47,8 @@
         <activity android:name=".discovery.DiscoveryActivity" />
         <activity android:name=".discovery.DiscoveryListActivity" />
         <activity android:name=".friend.FriendListActivity" />
+        <activity android:name=".RegisterActivity" />
+
 
         <provider
             android:name="androidx.core.content.FileProvider"

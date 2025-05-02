@@ -18,6 +18,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -54,7 +55,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
-import androidx.compose.ui.Alignment
+
 
 
 class MapActivity : BaseActivity() {
@@ -96,7 +97,6 @@ class MapActivity : BaseActivity() {
     }
 }
 
-
 @Composable
 fun MapScreen() {
     val context = LocalContext.current
@@ -128,7 +128,7 @@ fun MapScreen() {
         }
     }
 
-    // Lancer DiscoveryActivity avec ou sans image selon que l’utilisateur a pris une photo
+    // Lancer DiscoveryActivity avec ou sans image selon que l'utilisateur a pris une photo
     fun launchDiscoveryWithImage(uri: Uri?) {
         val discovery = Discovery(
             title = "Nouveau ping",
@@ -183,16 +183,56 @@ fun MapScreen() {
             )
         }
 
-        Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
-            MenuWithDropdown()
-        }
+        // Image en haut de l'écran avec menu à gauche
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+        ) {
+            // Image de fond de la barre supérieure
+            Image(
+                painter = painterResource(id = R.drawable.up_map_fond),
+                contentDescription = "Top Bar Background",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+            )
 
-        Box(modifier = Modifier.align(Alignment.TopEnd).padding(20.dp)) {
-            FollowButton(isFollowing = isFollowingLocation) {
-                isFollowingLocation = !isFollowingLocation
-                if (isFollowingLocation) {
-                    mapViewRef.value?.controller?.setZoom(17.5)
-                    mapViewRef.value?.controller?.animateTo(lastKnownPoint)
+            // Menu à gauche de la barre
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 16.dp)
+            ) {
+                MenuWithDropdown()
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 16.dp)
+            ) {
+                // FOLLOW BUTTON - premier plan et sans fond
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clickable {
+                            isFollowingLocation = !isFollowingLocation
+                            if (isFollowingLocation) {
+                                mapViewRef.value?.controller?.setZoom(17.5)
+                                mapViewRef.value?.controller?.animateTo(lastKnownPoint)
+                            }
+                        }
+                ) {
+                    Icon(
+                        painter = painterResource(id = if (isFollowingLocation) R.drawable.ping else R.drawable.ping),  // Même icône pour les deux états
+                        contentDescription = if (isFollowingLocation) "Stop following" else "Start following",
+                        tint = if (isFollowingLocation) Color.Blue else Color.White,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .align(Alignment.Center)
+                    )
                 }
             }
         }
@@ -232,7 +272,6 @@ fun MapScreen() {
                 )
             }
         }
-
     }
 }
 @Composable
