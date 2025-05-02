@@ -341,7 +341,7 @@ fun Map(
 
 @Composable
 fun FollowButton(isFollowing: Boolean, onClick: () -> Unit) {
-    val buttonColor = if (isFollowing) Color.Red else Color.Green
+    val buttonColor = if (isFollowing) Color(red = 228, green= 70, blue =67) else Color(red = 27,green=171 , blue =66)
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
