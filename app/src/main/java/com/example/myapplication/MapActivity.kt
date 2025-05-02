@@ -18,7 +18,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -55,7 +54,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
-
+import androidx.compose.ui.Alignment
 
 
 class MapActivity : BaseActivity() {
@@ -135,9 +134,9 @@ fun MapScreen() {
             title = "Nouveau ping",
             description = "Description ici",
             imageResId = R.drawable.cat03,
-            imageUri = uri?.toString(),
             latitude = lastKnownPoint.latitude,
-            longitude = lastKnownPoint.longitude
+            longitude = lastKnownPoint.longitude,
+            imageUri = uri?.toString()
         )
         val intent = Intent(context, DiscoveryActivity::class.java).apply {
             putExtra("discovery", discovery)
@@ -188,7 +187,7 @@ fun MapScreen() {
             MenuWithDropdown()
         }
 
-        Box(modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+        Box(modifier = Modifier.align(Alignment.TopEnd).padding(20.dp)) {
             FollowButton(isFollowing = isFollowingLocation) {
                 isFollowingLocation = !isFollowingLocation
                 if (isFollowingLocation) {

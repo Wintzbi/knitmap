@@ -35,9 +35,9 @@ data class Discovery(
     var title: String,
     var description: String,
     var imageResId: Int = R.drawable.cat03,
-    var imageUri: String? = null,
     val latitude: Double,
-    val longitude: Double
+    val longitude: Double,
+    var imageUri: String? = null
 ) : Serializable
 
 class DiscoveryListActivity : BaseActivity() {
@@ -98,7 +98,7 @@ fun DiscoveryListScreen() {
             GenericListWithControls(
                 items = discoveries,
                 onAdd = {
-                    val newDiscovery = Discovery("Nouvelle découverte", "Description temporaire", R.drawable.cat03, null, 0.0, 0.0)
+                    val newDiscovery = Discovery("Nouvelle découverte", "Description temporaire", R.drawable.cat03, 0.0, 0.0,null)
                     discoveries.add(newDiscovery)
                     selectedIndex = discoveries.indexOf(newDiscovery)
                     saveDiscoveries(context, discoveries)

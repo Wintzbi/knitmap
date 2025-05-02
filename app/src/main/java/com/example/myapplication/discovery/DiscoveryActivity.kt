@@ -157,9 +157,20 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = title, fontSize = 32.sp, color = Color.Black)
+                    Text(
+                        text = title,
+                        fontSize = 32.sp,
+                        color = Color.Black,
+                        modifier = Modifier.clickable { showEditor = true }
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = description, fontSize = 20.sp, color = Color.DarkGray)
+                    Text(
+                        text = description,
+                        fontSize = 20.sp,
+                        color = Color.DarkGray,
+                        modifier = Modifier.clickable { showEditor = true }
+                    )
+
                 }
             }
 
@@ -175,14 +186,13 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                 }) {
                     Text("Sauvegarder")
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { showEditor = false }) {
+                    Text("Annuler")
+                }
             }
         }
 
-        Box(modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp)) {
-            Button(onClick = { showEditor = !showEditor }) {
-                Text(if (showEditor) "Annuler" else "Modifier le texte")
-            }
-        }
 
         if (showImageOptions) {
             AlertDialog(
