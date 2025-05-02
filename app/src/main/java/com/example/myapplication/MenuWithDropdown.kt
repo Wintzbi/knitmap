@@ -25,7 +25,7 @@ fun MenuWithDropdown() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(0.dp),
         contentAlignment = Alignment.TopStart
     ) {
         IconButton(onClick = { expanded = true }) {

@@ -18,7 +18,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -55,7 +54,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
-
+import androidx.compose.ui.Alignment
 
 
 class MapActivity : BaseActivity() {
@@ -202,8 +201,8 @@ fun MapScreen() {
             // Menu à gauche de la barre
             Box(
                 modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 16.dp)
+                    .align(Alignment.TopStart)
+                    .padding(start =0.dp)
             ) {
                 MenuWithDropdown()
             }
