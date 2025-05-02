@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "646056713869",
+    "project_id": "knitmap-e1e0a",
+    "storage_bucket": "knitmap-e1e0a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:646056713869:android:4498bc4598a86b93398cc4",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLP0MKBvAiSeSnFMzQbHh4DLfdrCZNp0s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
