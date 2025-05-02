@@ -40,6 +40,13 @@ fun MenuWithDropdown() {
             onDismissRequest = { expanded = false }
         ) {
             DropdownMenuItem(
+                text = { Text("Profil") },
+                onClick = {
+                    expanded = false
+                    context.startActivity(Intent(context, ProfilActivity::class.java))
+                }
+            )
+            DropdownMenuItem(
                 text = { Text("Map") },
                 onClick = {
                     expanded = false

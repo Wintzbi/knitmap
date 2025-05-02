@@ -48,6 +48,7 @@
         <activity android:name=".discovery.DiscoveryListActivity" />
         <activity android:name=".friend.FriendListActivity" />
         <activity android:name=".RegisterActivity" />
+        <activity android:name=".ProfilActivity" />
 
 
         <provider
