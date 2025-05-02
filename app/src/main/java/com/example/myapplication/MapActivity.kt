@@ -54,6 +54,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 
 
@@ -105,7 +107,7 @@ fun PingImageButton(
         modifier = modifier
             .size(80.dp)
             .background(
-                color = Color(0xFFFBED),
+                color = Color(0xFFFFFBED),
                 shape = CircleShape
 
             )
