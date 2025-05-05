@@ -31,6 +31,7 @@ import androidx.core.content.FileProvider
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.example.myapplication.storage.removeDiscoveryByCoordinates
 
 
 class DiscoveryActivity : BaseActivity() {
@@ -219,6 +220,22 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                 confirmButton = {},
                 dismissButton = {}
             )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            Button(
+                onClick = {
+                    removeDiscoveryByCoordinates(context, discovery.latitude, discovery.longitude)
+                    (context as? ComponentActivity)?.finish()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) {
+                Text("Supprimer", color = Color.White)
+            }
         }
     }
 }
