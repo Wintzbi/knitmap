@@ -158,18 +158,21 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = title,
-                        fontSize = 32.sp,
-                        color = Color.Black,
-                        modifier = Modifier.clickable { showEditor = true }
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = { Text("Titre") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = description,
-                        fontSize = 20.sp,
-                        color = Color.DarkGray,
-                        modifier = Modifier.clickable { showEditor = true }
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        placeholder = { Text("Description") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 100.dp)
                     )
 
                 }
@@ -177,9 +180,9 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
 
             if (showEditor) {
                 Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Titre") })
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("") })
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Texte") })
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("") })
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = {
                     val updated = discovery.copy(title = title, description = description, imageUri = imageUri)
