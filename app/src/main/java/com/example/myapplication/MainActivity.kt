@@ -1,6 +1,8 @@
 package com.example.myapplication
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,22 +11,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.myapplication.ui.theme.MyApplicationTheme
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import com.example.myapplication.MenuWithDropdown
-
-
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : BaseActivity() {
+
     private lateinit var auth: FirebaseAuth
+    private val cameraPermissionRequestCode = 100
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Demande la permission d'accéder à la caméra au lancement
+        requestCameraPermission()
 
         auth = FirebaseAuth.getInstance()
 
@@ -32,11 +38,31 @@ class MainActivity : BaseActivity() {
             val intent = Intent(this, MapActivity::class.java)
             startActivity(intent)
             finish()
+            return
         }
 
         setContent {
             MyApplicationTheme {
                 LoginScreen(auth)
+            }
+        }
+    }
+
+    private fun requestCameraPermission() {
+        val permission = Manifest.permission.CAMERA
+        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(permission), cameraPermissionRequestCode)
+        }
+    }
+
+    // Optionnel : gestion du résultat de la permission
+    @Deprecated("Deprecated in Java")
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == cameraPermissionRequestCode) {
+            if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                // La permission a été refusée, tu peux afficher un message ici si tu veux
             }
         }
     }

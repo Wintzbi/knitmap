@@ -63,8 +63,8 @@ class DiscoveryActivity : BaseActivity() {
 fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
     val context = LocalContext.current
     var showEditor by remember { mutableStateOf(false) }
-    var title by remember { mutableStateOf(discovery.title) }
-    var description by remember { mutableStateOf(discovery.description) }
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     var imageUri by remember { mutableStateOf(discovery.imageUri) }
     var showImageOptions by remember { mutableStateOf(false) }
 
@@ -174,16 +174,11 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                             .fillMaxWidth()
                             .heightIn(min = 100.dp)
                     )
-
                 }
             }
 
             if (showEditor) {
                 Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("") })
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("") })
-                Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = {
                     val updated = discovery.copy(title = title, description = description, imageUri = imageUri)
                     onSave(updated)
@@ -196,7 +191,6 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                 }
             }
         }
-
 
         if (showImageOptions) {
             AlertDialog(
@@ -224,6 +218,7 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                 dismissButton = {}
             )
         }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
