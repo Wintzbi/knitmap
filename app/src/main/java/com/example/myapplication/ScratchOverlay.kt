@@ -85,7 +85,7 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
         // Dessiner tous les points découverts
         for (geoPoint in scratchedPoints) {
             val screenPoint = projection.toPixels(geoPoint, null)
-            val radius = projection.metersToEquatorPixels(50.0f) // Ajuster le rayon en fonction du zoom
+            val radius = projection.metersToEquatorPixels(150.0f) // Ajuster le rayon en fonction du zoom
             overlayCanvas?.drawCircle(
                 screenPoint.x.toFloat(),
                 screenPoint.y.toFloat(),
@@ -98,7 +98,7 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
             if (!discovery.latitude.isFinite() || !discovery.longitude.isFinite()) continue
             val geoPoint = GeoPoint(discovery.latitude, discovery.longitude)  // Création du GeoPoint correctement
             val screenPoint = projection.toPixels(geoPoint, null)
-            val radius = projection.metersToEquatorPixels(100.0f) // Ajuster le rayon selon le zoom
+            val radius = projection.metersToEquatorPixels(300.0f) // Ajuster le rayon selon le zoom
             overlayCanvas?.drawCircle(
                 screenPoint.x.toFloat(),
                 screenPoint.y.toFloat(),
