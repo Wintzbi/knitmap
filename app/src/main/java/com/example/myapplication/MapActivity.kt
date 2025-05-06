@@ -158,8 +158,8 @@ fun MapScreen() {
     // Lancer DiscoveryActivity avec ou sans image selon que l'utilisateur a pris une photo
     fun launchDiscoveryWithImage(uri: Uri?) {
         val discovery = Discovery(
-            title = "Nouveau ping",
-            description = "Description ici",
+            title = "",
+            description = "",
             imageResId = R.drawable.cat03,
             latitude = lastKnownPoint.latitude,
             longitude = lastKnownPoint.longitude,

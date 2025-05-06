@@ -63,8 +63,8 @@ class DiscoveryActivity : BaseActivity() {
 fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
     val context = LocalContext.current
     var showEditor by remember { mutableStateOf(false) }
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf(discovery.title ?: "") }
+    var description by remember { mutableStateOf(discovery.description ?: "") }
     var imageUri by remember { mutableStateOf(discovery.imageUri) }
     var showImageOptions by remember { mutableStateOf(false) }
 
@@ -74,6 +74,7 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
         if (success) {
             cameraImageUri?.let { uri ->
                 imageUri = uri.toString()
+                showEditor = true
             }
         }
     }
@@ -81,6 +82,7 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             imageUri = it.toString()
+            showEditor = true
         }
     }
 
@@ -142,7 +144,10 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                     modifier = Modifier
                         .size(200.dp)
                         .padding(16.dp)
-                        .clickable { showImageOptions = true },
+                        .clickable {
+                            showImageOptions = true
+                            showEditor = true
+                        },
                     contentScale = ContentScale.Crop
                 )
             }
@@ -160,7 +165,10 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                 ) {
                     OutlinedTextField(
                         value = title,
-                        onValueChange = { title = it },
+                        onValueChange = {
+                            title = it
+                            showEditor = true
+                        },
                         placeholder = { Text("Titre") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
@@ -168,26 +176,15 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = description,
-                        onValueChange = { description = it },
+                        onValueChange = {
+                            description = it
+                            showEditor = true
+                        },
                         placeholder = { Text("Description") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 100.dp)
                     )
-                }
-            }
-
-            if (showEditor) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = {
-                    val updated = discovery.copy(title = title, description = description, imageUri = imageUri)
-                    onSave(updated)
-                }) {
-                    Text("Sauvegarder")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = { showEditor = false }) {
-                    Text("Annuler")
                 }
             }
         }
@@ -225,14 +222,35 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                 .padding(16.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
-            Button(
-                onClick = {
-                    removeDiscoveryByCoordinates(context, discovery.latitude, discovery.longitude)
-                    (context as? ComponentActivity)?.finish()
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-            ) {
-                Text("Supprimer", color = Color.White)
+            Column(horizontalAlignment = Alignment.End) {
+                if (showEditor) {
+                    Button(onClick = {
+                        val updated = discovery.copy(title = title, description = description, imageUri = imageUri)
+                        onSave(updated)
+                    }) {
+                        Text("Sauvegarder")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = {
+                        showEditor = false
+                        title = discovery.title ?: ""
+                        description = discovery.description ?: ""
+                        imageUri = discovery.imageUri
+                    }) {
+                        Text("Annuler")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Button(
+                    onClick = {
+                        removeDiscoveryByCoordinates(context, discovery.latitude, discovery.longitude)
+                        (context as? ComponentActivity)?.finish()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Supprimer", color = Color.White)
+                }
             }
         }
     }

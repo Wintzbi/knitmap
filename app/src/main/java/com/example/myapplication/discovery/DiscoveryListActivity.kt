@@ -98,7 +98,7 @@ fun DiscoveryListScreen() {
             GenericListWithControls(
                 items = discoveries,
                 onAdd = {
-                    val newDiscovery = Discovery("Nouvelle découverte", "Description temporaire", R.drawable.cat03, 0.0, 0.0,null)
+                    val newDiscovery = Discovery("", "", R.drawable.cat03, 0.0, 0.0,null)
                     discoveries.add(newDiscovery)
                     selectedIndex = discoveries.indexOf(newDiscovery)
                     saveDiscoveries(context, discoveries)

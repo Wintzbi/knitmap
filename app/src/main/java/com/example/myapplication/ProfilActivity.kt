@@ -87,7 +87,7 @@ fun ProfilScreen(pseudo: String, nbDiscoveries: Int) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp) // Fixez une hauteur appropriée
+                .height(300.dp)
                 .zIndex(1f),
             contentAlignment = Alignment.TopCenter
         ) {
@@ -96,17 +96,32 @@ fun ProfilScreen(pseudo: String, nbDiscoveries: Int) {
                 contentDescription = "Image de profil",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = (-35).dp) // Déplacez vers le haut pour couper le premier quart
+                    .offset(y = (-35).dp)
                     .clip(RectangleShape),
                 contentScale = ContentScale.FillWidth
             )
         }
 
-        // Colonne principale contenant l'image up_profile puis le texte
+        // Placer le MenuWithDropdown tout en haut à gauche avec un zIndex élevé
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(10f) // Valeur élevée pour être au-dessus de tout
+        ) {
+            // Positionner le menu en haut à gauche
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+            ) {
+                MenuWithDropdown()
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(vertical = 22.dp, horizontal = 0.dp)  // Retirer le padding horizontal
+                .padding(vertical = 22.dp, horizontal = 0.dp)
                 .zIndex(3f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -118,11 +133,13 @@ fun ProfilScreen(pseudo: String, nbDiscoveries: Int) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .offset(y = (-45).dp)
+                    .offset(y = (-105).dp)
                     .rotate(-8f)
-                    .padding(vertical = 0.dp, horizontal = 0.dp),  // Pas de padding horizontal
+                    .padding(vertical = 0.dp, horizontal = 0.dp),
                 contentScale = ContentScale.FillWidth
             )
+
+            // Removed the MenuWithDropdown from here as it's now placed in the Box above
 
             // Espace entre l'image et le texte
             Spacer(modifier = Modifier.height(24.dp))
@@ -155,3 +172,4 @@ fun ProfilScreen(pseudo: String, nbDiscoveries: Int) {
         }
     }
 }
+
