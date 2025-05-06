@@ -9,11 +9,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.rotate
+
 import androidx.compose.ui.zIndex
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -63,19 +68,20 @@ fun ProfilScreen(pseudo: String) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Image de fond (en arrière-plan)
+        // Image de fond (remplit la largeur, hauteur auto)
         Image(
-            painter = painterResource(id = R.drawable.up_profile),
+            painter = painterResource(id = R.drawable.profil_fond),
             contentDescription = "Image de fond",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+            modifier = Modifier
+                .fillMaxSize(),
+            contentScale = ContentScale.FillWidth
         )
 
-        // Image de profil en haut de l'écran
+        // Image de profil en haut (coupée à partir du quart de sa hauteur)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 32.dp)
+                .height(300.dp) // Fixez une hauteur appropriée
                 .zIndex(1f),
             contentAlignment = Alignment.TopCenter
         ) {
@@ -83,23 +89,45 @@ fun ProfilScreen(pseudo: String) {
                 painter = painterResource(id = R.drawable.cat03),
                 contentDescription = "Image de profil",
                 modifier = Modifier
-                    .size(120.dp)
-                    .zIndex(1f)
+                    .fillMaxWidth()
+                    .offset(y = (-35).dp) // Déplacez vers le haut pour couper le premier quart
+                    .clip(RectangleShape),
+                contentScale = ContentScale.FillWidth
             )
         }
 
-        // Contenu principal au milieu avec une image
+        // Colonne principale contenant l'image up_profile puis le texte
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp),
+                .padding(vertical = 22.dp, horizontal = 0.dp)  // Retirer le padding horizontal
+                .zIndex(3f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // Image up_profile d'abord (au-dessus)
+            Image(
+                painter = painterResource(id = R.drawable.up_profile),
+                contentDescription = "Image centrale",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .offset(y = (-45).dp)
+                    .rotate(-8f)
+                    .padding(vertical = 0.dp, horizontal = 0.dp),  // Pas de padding horizontal
+
+                contentScale = ContentScale.FillWidth
+            )
+
+            // Espace entre l'image et le texte
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Texte en dessous de l'image
             Text(
                 "Bonjour",
                 style = MaterialTheme.typography.headlineLarge,
-                color = Color.White
+                color = Color.Black,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -107,18 +135,8 @@ fun ProfilScreen(pseudo: String) {
             Text(
                 pseudo,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Image au milieu par-dessus toutes les autres
-            Image(
-                painter = painterResource(id = R.drawable.up_profile),
-                contentDescription = "Image centrale",
-                modifier = Modifier
-                    .size(200.dp)
-                    .zIndex(2f)
+                color = Color.Black,
+                fontWeight = FontWeight.Medium
             )
         }
     }
