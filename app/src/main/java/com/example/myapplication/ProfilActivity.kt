@@ -12,14 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.rotate
 
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.example.myapplication.storage.getDiscoveries
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -44,27 +44,33 @@ class ProfilActivity : ComponentActivity() {
                     } else {
                         pseudo = "Pseudo introuvable"
                     }
+                    // Récupérer le nombre d'éléments dans la liste des découvertes
+                    val nbDiscoveries = getDiscoveries(this).size
+
+                    // Passer nbDiscoveries à ProfilScreen
                     setContent {
-                        ProfilScreen(pseudo ?: "Chargement...")
+                        ProfilScreen(pseudo ?: "Chargement...", nbDiscoveries)
                     }
                 }
                 .addOnFailureListener {
                     pseudo = "Erreur de chargement"
+                    val nbDiscoveries = getDiscoveries(this).size
                     setContent {
-                        ProfilScreen(pseudo ?: "Chargement...")
+                        ProfilScreen(pseudo ?: "Chargement...", nbDiscoveries)
                     }
                 }
         } else {
             pseudo = "Utilisateur non connecté"
+            val nbDiscoveries = getDiscoveries(this).size
             setContent {
-                ProfilScreen(pseudo ?: "Chargement...")
+                ProfilScreen(pseudo ?: "Chargement...", nbDiscoveries)
             }
         }
     }
 }
 
 @Composable
-fun ProfilScreen(pseudo: String) {
+fun ProfilScreen(pseudo: String, nbDiscoveries: Int) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -115,7 +121,6 @@ fun ProfilScreen(pseudo: String) {
                     .offset(y = (-45).dp)
                     .rotate(-8f)
                     .padding(vertical = 0.dp, horizontal = 0.dp),  // Pas de padding horizontal
-
                 contentScale = ContentScale.FillWidth
             )
 
@@ -138,12 +143,15 @@ fun ProfilScreen(pseudo: String) {
                 color = Color.Black,
                 fontWeight = FontWeight.Medium
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Afficher le nombre d'éléments dans la liste des découvertes
+            Text(
+                "$nbDiscoveries découvertes",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Black
+            )
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewProfilScreen() {
-    ProfilScreen(pseudo = "Mamie Ping")
 }
