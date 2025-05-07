@@ -133,7 +133,7 @@ fun ProfilScreen(pseudo: String, nbDiscoveries: Int) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .offset(y = (-105).dp)
+                    .offset(y = (-85).dp)
                     .rotate(-8f)
                     .padding(vertical = 0.dp, horizontal = 0.dp),
                 contentScale = ContentScale.FillWidth

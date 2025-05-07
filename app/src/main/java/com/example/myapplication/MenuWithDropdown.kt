@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import com.example.myapplication.discovery.DiscoveryListActivity
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -93,6 +94,23 @@ fun MenuWithDropdown() {
                         onClick = {
                             expanded = false
                             context.startActivity(Intent(context, MapActivity::class.java))
+                        }
+                    )
+
+                    // Séparateur
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(1.dp)
+                            .background(textColor)
+                    )
+
+                    DropdownMenuItem(
+                        text = { Text("Découvertes", color = textColor) },
+                        onClick = {
+                            expanded = false
+                            context.startActivity(Intent(context, DiscoveryListActivity::class.java))
                         }
                     )
 

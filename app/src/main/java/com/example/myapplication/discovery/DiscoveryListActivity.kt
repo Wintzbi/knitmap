@@ -68,10 +68,20 @@ fun DiscoveryListScreen() {
         if (result.resultCode == Activity.RESULT_OK) {
             @Suppress("DEPRECATION")
             val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
-            if (updated != null && selectedIndex in discoveries.indices) {
-                discoveries[selectedIndex] = updated
+            if (updated != null) {
+                val index = discoveries.indexOfFirst {
+                    it.latitude == updated.latitude && it.longitude == updated.longitude
+                }
+
+                if (index != -1) {
+                    discoveries[index] = updated
+                } else {
+                    discoveries.add(updated) // au cas où elle n'était pas dans la liste
+                }
+
                 saveDiscoveries(context, discoveries)
             }
+
         }
     }
 
