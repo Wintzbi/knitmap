@@ -131,8 +131,8 @@ fun FollowImageButton(
     modifier: Modifier = Modifier
 ) {
     val backgroundColor = if (isFollowing) Color(0xFFD6EAF8) else Color(0xFFFFFBED)
-    val iconColor = if (isFollowing) Color.Blue else Color.Gray
-    val iconRes = R.drawable.ping // pour changer icône
+    val iconColor = if (isFollowing) Color(0xFFE7191F) else Color(0xFF154043)
+    val iconRes = R.drawable.target // pour changer icône
 
     Box(
         modifier = modifier
@@ -283,6 +283,7 @@ fun MapScreen() {
                     },
                     modifier = Modifier
                         .size(48.dp)
+                        .offset(y = (-370).dp)
                 )
             }
         }
