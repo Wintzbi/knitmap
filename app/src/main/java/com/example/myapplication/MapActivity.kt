@@ -118,7 +118,7 @@ fun PingImageButton(
             painter = painterResource(id = R.drawable.ping),
             contentDescription = "Ajouter un ping",
             tint = Color.Unspecified,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(80.dp) // taille bouton
         )
     }
 }
@@ -308,7 +308,7 @@ fun MapScreen() {
                 onClick = { startCameraIntent() },
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(y = (-10).dp, x = (10).dp) // ajuste la valeur ici pour bien centrer
+                    .offset(y = (-2).dp, x = (10).dp) // ajuste la valeur ici pour bien centrer
             )
         }
     }
