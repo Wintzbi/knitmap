@@ -123,6 +123,37 @@ fun PingImageButton(
     }
 }
 
+// bouton suivre
+@Composable
+fun FollowImageButton(
+    isFollowing: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = if (isFollowing) Color(0xFFD6EAF8) else Color(0xFFFFFBED)
+    val iconColor = if (isFollowing) Color.Blue else Color.Gray
+    val iconRes = R.drawable.ping // pour changer icône
+
+    Box(
+        modifier = modifier
+            .size(80.dp)
+            .background(
+                color = backgroundColor,
+                shape = CircleShape
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = "Suivre ma position",
+            tint = iconColor,
+            modifier = Modifier.size(36.dp)
+        )
+    }
+}
+
+
 
 @Composable
 fun MapScreen() {
@@ -240,27 +271,19 @@ fun MapScreen() {
                     .align(Alignment.CenterEnd)
                     .padding(end = 16.dp)
             ) {
-                // FOLLOW BUTTON - premier plan et sans fond
-                Box(
+                // FOLLOW BUTTON
+                FollowImageButton(
+                    isFollowing = isFollowingLocation,
+                    onClick = {
+                        isFollowingLocation = !isFollowingLocation
+                        if (isFollowingLocation) {
+                            mapViewRef.value?.controller?.setZoom(17.5)
+                            mapViewRef.value?.controller?.animateTo(lastKnownPoint)
+                        }
+                    },
                     modifier = Modifier
                         .size(48.dp)
-                        .clickable {
-                            isFollowingLocation = !isFollowingLocation
-                            if (isFollowingLocation) {
-                                mapViewRef.value?.controller?.setZoom(17.5)
-                                mapViewRef.value?.controller?.animateTo(lastKnownPoint)
-                            }
-                        }
-                ) {
-                    Icon(
-                        painter = painterResource(id = if (isFollowingLocation) R.drawable.ping else R.drawable.ping),  // Même icône pour les deux états
-                        contentDescription = if (isFollowingLocation) "Stop following" else "Start following",
-                        tint = if (isFollowingLocation) Color.Blue else Color.White,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .align(Alignment.Center)
-                    )
-                }
+                )
             }
         }
 
