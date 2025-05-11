@@ -1,23 +1,28 @@
 package com.example.myapplication
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.view.ViewTreeObserver
-import android.widget.Toast
+import androidx.core.graphics.createBitmap
+import com.example.myapplication.storage.getDiscoveries
+import com.example.myapplication.storage.getScratchedPoints
+import com.example.myapplication.storage.saveScratchedPoints
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Overlay
-import com.example.myapplication.storage.getScratchedPoints
-import com.example.myapplication.storage.saveScratchedPoints
-import com.example.myapplication.discovery.Discovery
-import com.example.myapplication.storage.getDiscoveries
-import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 
 class ScratchOverlay(private val mapView: MapView) : Overlay() {
 
     private var overlayBitmap: Bitmap? = null
     private var overlayCanvas: Canvas? = null
     private val overlayPaint = Paint()
-    val savedDiscoveries = getDiscoveries(mapView.context)
+    private val savedDiscoveries = getDiscoveries(mapView.context)
     private val scratchPaint = Paint().apply {
         isAntiAlias = true
         xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR) // Mode effacement
@@ -54,7 +59,7 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
         val scaleFactor = maxOf(screenWidth.toFloat() / image.width, screenHeight.toFloat() / image.height)
         val scaledWidth = (image.width * scaleFactor).toInt()
         val scaledHeight = (image.height * scaleFactor).toInt()
-        return Bitmap.createScaledBitmap(image, scaledWidth, scaledHeight, false)
+        return image.scale(scaledWidth, scaledHeight, false)
     }
 
     override fun draw(canvas: Canvas, mapView: MapView, shadow: Boolean) {

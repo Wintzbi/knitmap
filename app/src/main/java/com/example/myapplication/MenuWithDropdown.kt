@@ -19,7 +19,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import com.example.myapplication.discovery.DiscoveryListActivity
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun MenuWithDropdown() {
     val context = LocalContext.current
@@ -53,89 +52,65 @@ fun MenuWithDropdown() {
                 modifier = Modifier
                     .padding(start = 16.dp, top = 80.dp)
                     .wrapContentSize()
+                    .widthIn(max = 150.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(backgroundColor)
+                    .border(1.5.dp, borderColor, RoundedCornerShape(22.dp))
             ) {
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    modifier = Modifier
-                        .background(color = backgroundColor,
-                            shape = RoundedCornerShape(22.dp),
+                Column {
+                    MenuItem("Profil", textColor) {
+                        expanded = false
+                        context.startActivity(Intent(context, ProfilActivity::class.java))
+                    }
 
-                        )
-                        .border(
-                            width = 1.5.dp,
-                            color = borderColor,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .clip(RoundedCornerShape(30.dp))
-                )
-                {
-                    // Premier élément
-                    DropdownMenuItem(
-                        text = { Text("Profil", color = textColor) },
-                        onClick = {
-                            expanded = false
-                            context.startActivity(Intent(context, ProfilActivity::class.java))
-                        }
-                    )
+                    Separator(textColor)
 
-                    // Séparateur
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .height(1.dp)
-                            .background(textColor)
-                    )
+                    MenuItem("Map", textColor) {
+                        expanded = false
+                        context.startActivity(Intent(context, MapActivity::class.java))
+                    }
 
-                    // Deuxième élément
-                    DropdownMenuItem(
-                        text = { Text("Map", color = textColor) },
-                        onClick = {
-                            expanded = false
-                            context.startActivity(Intent(context, MapActivity::class.java))
-                        }
-                    )
+                    Separator(textColor)
 
-                    // Séparateur
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .height(1.dp)
-                            .background(textColor)
-                    )
+                    MenuItem("Découvertes", textColor) {
+                        expanded = false
+                        context.startActivity(Intent(context, DiscoveryListActivity::class.java))
+                    }
 
-                    DropdownMenuItem(
-                        text = { Text("Découvertes", color = textColor) },
-                        onClick = {
-                            expanded = false
-                            context.startActivity(Intent(context, DiscoveryListActivity::class.java))
-                        }
-                    )
+                    Separator(textColor)
 
-                    // Séparateur
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .height(1.dp)
-                            .background(textColor)
-                    )
-
-                    // Troisième élément
-                    DropdownMenuItem(
-                        text = { Text("Déconnexion", color = textColor) },
-                        onClick = {
-                            expanded = false
-                            FirebaseAuth.getInstance().signOut()
-                            val logoutIntent = Intent(context, MainActivity::class.java)
-                            logoutIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            context.startActivity(logoutIntent)
-                        }
-                    )
+                    MenuItem("Déconnexion", textColor) {
+                        expanded = false
+                        FirebaseAuth.getInstance().signOut()
+                        val logoutIntent = Intent(context, MainActivity::class.java)
+                        logoutIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        context.startActivity(logoutIntent)
+                    }
                 }
             }
         }
+
     }
+}
+@Composable
+fun MenuItem(label: String, textColor: Color, onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Text(label, color = textColor)
+    }
+}
+
+@Composable
+fun Separator(color: Color) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .height(1.dp)
+            .background(color)
+    )
 }

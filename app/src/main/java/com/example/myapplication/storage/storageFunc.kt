@@ -2,15 +2,13 @@ package com.example.myapplication.storage
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
+import com.example.myapplication.discovery.Discovery
+import com.example.myapplication.friend.Friend
+import com.example.myapplication.group.Group
+import com.example.myapplication.travel.Travel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-
-import com.example.myapplication.friend.Friend
-import com.example.myapplication.travel.Travel
-import com.example.myapplication.group.Group
-import androidx.core.content.edit
-import kotlin.apply
-import com.example.myapplication.discovery.Discovery
 import org.osmdroid.util.GeoPoint
 
 private const val PREF_NAME = "my_complex_data"

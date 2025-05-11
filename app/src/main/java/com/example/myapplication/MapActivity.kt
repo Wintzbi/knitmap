@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.PorterDuff
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -13,19 +14,18 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.FileProvider
+import androidx.core.graphics.toColorInt
 import com.example.myapplication.discovery.Discovery
 import com.example.myapplication.discovery.DiscoveryActivity
 import com.example.myapplication.storage.getDiscoveries
+import com.example.myapplication.storage.getLastKnownPoint
 import com.example.myapplication.storage.saveDiscoveries
 import com.example.myapplication.storage.saveLastKnownPoint
-import com.example.myapplication.storage.getLastKnownPoint
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -35,7 +35,9 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 
 class MapActivity : BaseActivity() {
 
@@ -107,6 +109,8 @@ class MapActivity : BaseActivity() {
             setImageResource(R.drawable.target)
             setOnClickListener {
                 isFollowing = !isFollowing
+                val newColor = if (isFollowing) "#E7191F".toColorInt() else "#154043".toColorInt()
+                setColorFilter(newColor, PorterDuff.Mode.SRC_IN)
                 if (isFollowing) {
                     mapView.controller.setZoom(17.5)
                     mapView.controller.animateTo(lastKnownPoint)
@@ -152,6 +156,7 @@ class MapActivity : BaseActivity() {
                 saveLastKnownPoint(this@MapActivity, lastKnownPoint)
             }
 
+            @Deprecated("Deprecated in Java")
             override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
             override fun onProviderEnabled(provider: String) {}
             override fun onProviderDisabled(provider: String) {}
