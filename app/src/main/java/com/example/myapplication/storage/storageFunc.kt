@@ -45,7 +45,7 @@ fun removeFriendByName(context: Context, friendName: String) {
     }
 
     // Sauvegarder la liste mise à jour
-    prefs.edit().putString("friends", Gson().toJson(updatedFriends)).apply()
+    prefs.edit { putString("friends", Gson().toJson(updatedFriends)) }
 }
 
 // ---------------------- PINGS ----------------------
@@ -62,21 +62,16 @@ fun getDiscoveries(context: Context): List<Discovery> {
 
 
 
-fun removeDiscoveryByCoordinates(context: Context, latitude: Double, longitude: Double) {
+fun removeDiscoveryByUuid(context: Context, uuid: String) {
     val prefs = getPrefs(context)
     val json = prefs.getString("discoveries", null) ?: return
     val type = object : TypeToken<List<Discovery>>() {}.type
     val discoveries: MutableList<Discovery> = gson.fromJson(json, type)
 
-    // Filtrer la liste pour enlever le Discovery correspondant aux coordonnées
-    val updatedDiscoveries = discoveries.filterNot {
-        it.latitude == latitude && it.longitude == longitude
-    }
+    val updatedDiscoveries = discoveries.filterNot { it.uuid == uuid }
 
-    // Sauvegarder la liste mise à jour
-    prefs.edit().putString("discoveries", gson.toJson(updatedDiscoveries)).apply()
+    prefs.edit { putString("discoveries", gson.toJson(updatedDiscoveries)) }
 }
-
 
 // ---------------------- VOYAGES ----------------------
 
@@ -103,7 +98,7 @@ fun removeTravelByTitle(context: Context, travelTitle: String) {
     }
 
     // Sauvegarder la liste mise à jour
-    prefs.edit().putString("travels", Gson().toJson(updatedTravels)).apply()
+    prefs.edit { putString("travels", Gson().toJson(updatedTravels)) }
 }
 // ---------------------- GROUPES D'AMIS ----------------------
 
@@ -129,7 +124,7 @@ fun removeGroupByName(context: Context, groupName: String) {
     }
 
     // Sauvegarder la liste mise à jour
-    prefs.edit().putString("groups", Gson().toJson(updatedGroups)).apply()
+    prefs.edit { putString("groups", Gson().toJson(updatedGroups)) }
 }
 
 // ---------------------- Scratch ----------------------
