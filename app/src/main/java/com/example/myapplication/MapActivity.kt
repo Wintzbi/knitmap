@@ -10,6 +10,7 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -223,11 +224,19 @@ fun launchDiscoveryWithImage(context: Context, uri: Uri?, point: GeoPoint, launc
 }
 
 fun startCameraIntent(context: Context, launcher: ActivityResultLauncher<Uri>, onUriReady: (Uri) -> Unit) {
-    val file = File.createTempFile("IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}", ".jpg", context.cacheDir)
+    // Créer un fichier dans le dossier Pictures
+    val picturesDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+    val fileName = "IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.jpg"
+    val file = File(picturesDir, fileName)
+
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
     onUriReady(uri)
     launcher.launch(uri)
+
+    // Enregistrer dans la galerie après la prise de photo
+    context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)))
 }
+
 
 fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: ActivityResultLauncher<Intent>) {
     val discoveries = getDiscoveries(context).map {
