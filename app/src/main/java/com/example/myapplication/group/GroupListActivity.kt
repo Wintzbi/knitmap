@@ -110,7 +110,7 @@ fun GroupListScreen() {
             GenericListWithControls(
                 items = groups,
                 onAdd = {
-                    val newGroup = Group("Nouveau Groupe", "Description temporaire", R.drawable.paris)
+                    val newGroup = Group("Nouveau Groupe", "Description temporaire", R.drawable.cat03)
                     groups.add(newGroup)
                     selectedIndex = groups.indexOf(newGroup)
 

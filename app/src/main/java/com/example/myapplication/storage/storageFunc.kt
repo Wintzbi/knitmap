@@ -2,15 +2,13 @@ package com.example.myapplication.storage
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
+import com.example.myapplication.discovery.Discovery
+import com.example.myapplication.friend.Friend
+import com.example.myapplication.group.Group
+import com.example.myapplication.travel.Travel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-
-import com.example.myapplication.friend.Friend
-import com.example.myapplication.travel.Travel
-import com.example.myapplication.group.Group
-import androidx.core.content.edit
-import kotlin.apply
-import com.example.myapplication.discovery.Discovery
 import org.osmdroid.util.GeoPoint
 
 private const val PREF_NAME = "my_complex_data"
@@ -45,7 +43,7 @@ fun removeFriendByName(context: Context, friendName: String) {
     }
 
     // Sauvegarder la liste mise à jour
-    prefs.edit().putString("friends", Gson().toJson(updatedFriends)).apply()
+    prefs.edit { putString("friends", Gson().toJson(updatedFriends)) }
 }
 
 // ---------------------- PINGS ----------------------
@@ -62,21 +60,16 @@ fun getDiscoveries(context: Context): List<Discovery> {
 
 
 
-fun removeDiscoveryByCoordinates(context: Context, latitude: Double, longitude: Double) {
+fun removeDiscoveryByUuid(context: Context, uuid: String) {
     val prefs = getPrefs(context)
     val json = prefs.getString("discoveries", null) ?: return
     val type = object : TypeToken<List<Discovery>>() {}.type
     val discoveries: MutableList<Discovery> = gson.fromJson(json, type)
 
-    // Filtrer la liste pour enlever le Discovery correspondant aux coordonnées
-    val updatedDiscoveries = discoveries.filterNot {
-        it.latitude == latitude && it.longitude == longitude
-    }
+    val updatedDiscoveries = discoveries.filterNot { it.uuid == uuid }
 
-    // Sauvegarder la liste mise à jour
-    prefs.edit().putString("discoveries", gson.toJson(updatedDiscoveries)).apply()
+    prefs.edit { putString("discoveries", gson.toJson(updatedDiscoveries)) }
 }
-
 
 // ---------------------- VOYAGES ----------------------
 
@@ -103,7 +96,7 @@ fun removeTravelByTitle(context: Context, travelTitle: String) {
     }
 
     // Sauvegarder la liste mise à jour
-    prefs.edit().putString("travels", Gson().toJson(updatedTravels)).apply()
+    prefs.edit { putString("travels", Gson().toJson(updatedTravels)) }
 }
 // ---------------------- GROUPES D'AMIS ----------------------
 
@@ -129,7 +122,7 @@ fun removeGroupByName(context: Context, groupName: String) {
     }
 
     // Sauvegarder la liste mise à jour
-    prefs.edit().putString("groups", Gson().toJson(updatedGroups)).apply()
+    prefs.edit { putString("groups", Gson().toJson(updatedGroups)) }
 }
 
 // ---------------------- Scratch ----------------------

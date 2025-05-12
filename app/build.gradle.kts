@@ -53,7 +53,7 @@ dependencies {
 
     implementation("com.google.firebase:firebase-storage-ktx")
 
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
 
@@ -62,6 +62,8 @@ dependencies {
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation ("androidx.constraintlayout:constraintlayout:2.2.1")
+
 
     // Supprime cette ligne redondante si elle pointe vers une autre version :
     // implementation(libs.firebase.auth)

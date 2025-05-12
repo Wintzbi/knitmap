@@ -113,4 +113,3 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
     }
 }
 
-

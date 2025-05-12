@@ -1,17 +1,40 @@
 package com.example.myapplication.discovery
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,19 +42,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.BaseActivity
 import com.example.myapplication.R
+import com.example.myapplication.storage.removeDiscoveryByUuid
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.*
-import androidx.core.content.FileProvider
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import com.example.myapplication.storage.removeDiscoveryByCoordinates
+import java.util.Date
+import java.util.Locale
 
 
 class DiscoveryActivity : BaseActivity() {
@@ -63,8 +83,8 @@ class DiscoveryActivity : BaseActivity() {
 fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
     val context = LocalContext.current
     var showEditor by remember { mutableStateOf(false) }
-    var title by remember { mutableStateOf(discovery.title ?: "") }
-    var description by remember { mutableStateOf(discovery.description ?: "") }
+    var title by remember { mutableStateOf(discovery.title) }
+    var description by remember { mutableStateOf(discovery.description) }
     var imageUri by remember { mutableStateOf(discovery.imageUri) }
     var showImageOptions by remember { mutableStateOf(false) }
 
@@ -233,8 +253,8 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(onClick = {
                         showEditor = false
-                        title = discovery.title ?: ""
-                        description = discovery.description ?: ""
+                        title = discovery.title
+                        description = discovery.description
                         imageUri = discovery.imageUri
                     }) {
                         Text("Annuler")
@@ -244,7 +264,7 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
 
                 Button(
                     onClick = {
-                        removeDiscoveryByCoordinates(context, discovery.latitude, discovery.longitude)
+                        removeDiscoveryByUuid(context, discovery.uuid)
                         (context as? ComponentActivity)?.finish()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)

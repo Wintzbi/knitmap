@@ -1,18 +1,44 @@
 package com.example.myapplication.discovery
 
+import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,15 +47,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.BaseActivity
 import com.example.myapplication.MenuWithDropdown
 import com.example.myapplication.R
 import com.example.myapplication.components.GenericListWithControls
-import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.storage.getDiscoveries
 import com.example.myapplication.storage.saveDiscoveries
+import com.example.myapplication.ui.theme.MyApplicationTheme
+import org.osmdroid.util.GeoPoint
 import java.io.Serializable
+import java.util.UUID
 
 data class Discovery(
     var title: String,
@@ -37,26 +66,92 @@ data class Discovery(
     var imageResId: Int = R.drawable.cat03,
     val latitude: Double,
     val longitude: Double,
-    var imageUri: String? = null
+    var imageUri: String? = null,
+    val uuid: String = UUID.randomUUID().toString()
 ) : Serializable
 
+
 class DiscoveryListActivity : BaseActivity() {
+    private lateinit var locationManager: LocationManager
+
+    private val _currentLocation = mutableStateOf(GeoPoint(48.8583, 2.2944))
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             MyApplicationTheme {
-                DiscoveryListScreen()
+                DiscoveryListScreen(currentLocation = _currentLocation)
             }
+        }
+        // Initialiser le LocationManager ici, dans onCreate()
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        val locationListener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                _currentLocation.value  = GeoPoint(location.latitude, location.longitude)
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+
+            override fun onProviderEnabled(provider: String) {}
+            override fun onProviderDisabled(provider: String) {}
+        }
+
+        // Vérifier si la permission est accordée avant de demander la localisation
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                0L,
+                0f,
+                locationListener
+            )
+        } else {
+            // Demander la permission si elle n'est pas encore accordée
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                1001
+            )
+        }
+    }
+
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    @Deprecated("Deprecated in Java")
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == 1001 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // Si la permission est accordée après la demande, on peut démarrer la localisation
+            val locationListener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    _currentLocation.value = GeoPoint(location.latitude, location.longitude)
+                }
+
+                override fun onProviderEnabled(provider: String) {}
+                override fun onProviderDisabled(provider: String) {}
+                @Deprecated("Deprecated in Java")
+                override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+            }
+
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, locationListener)
         }
     }
 }
-
 @Composable
-fun DiscoveryListScreen() {
+fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
     val context = LocalContext.current
+    val location = currentLocation.value
     val discoveries = remember {
         mutableStateListOf<Discovery>().apply {
-            addAll(getDiscoveries(context))
+            addAll(getDiscoveries(context).map {
+                if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
+            })
         }
     }
 
@@ -70,7 +165,7 @@ fun DiscoveryListScreen() {
             val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
             if (updated != null) {
                 val index = discoveries.indexOfFirst {
-                    it.latitude == updated.latitude && it.longitude == updated.longitude
+                    it.uuid == updated.uuid
                 }
 
                 if (index != -1) {
@@ -108,7 +203,7 @@ fun DiscoveryListScreen() {
             GenericListWithControls(
                 items = discoveries,
                 onAdd = {
-                    val newDiscovery = Discovery("", "", R.drawable.cat03, 0.0, 0.0,null)
+                    val newDiscovery = Discovery("", "", R.drawable.cat03, location.latitude, location.longitude,null)
                     discoveries.add(newDiscovery)
                     selectedIndex = discoveries.indexOf(newDiscovery)
                     saveDiscoveries(context, discoveries)
