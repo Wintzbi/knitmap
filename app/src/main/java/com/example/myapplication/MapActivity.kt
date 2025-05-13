@@ -69,6 +69,7 @@ class MapActivity : BaseActivity() {
                     )
                     val existing = getDiscoveries(this).map {
                         if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
+                        if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
                     }.toMutableList()
                     val index = existing.indexOfFirst { it.uuid == updated.uuid }
 
@@ -87,8 +88,10 @@ class MapActivity : BaseActivity() {
         cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success && photoUri != null) {
                 launchDiscoveryWithImage(this, photoUri, lastKnownPoint, discoveryLauncher)
+                addDiscoveryMarkers(mapView, this, discoveryLauncher)
             } else {
                 launchDiscoveryWithImage(this, null, lastKnownPoint, discoveryLauncher)
+                addDiscoveryMarkers(mapView, this, discoveryLauncher)
             }
         }
 
@@ -134,6 +137,7 @@ class MapActivity : BaseActivity() {
         val defaultParis = GeoPoint(48.8566, 2.3522)
         val discoveries = getDiscoveries(this).map {
             if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
+            if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
         }
 
         val lastDiscovery = discoveries.lastOrNull()
@@ -149,7 +153,7 @@ class MapActivity : BaseActivity() {
         mapView.overlays.add(locationOverlay)
 
         // Listener GPS pour mises à jour en temps réel
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
         val locationListener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
                 lastKnownPoint = GeoPoint(location.latitude, location.longitude)
@@ -237,10 +241,10 @@ fun startCameraIntent(context: Context, launcher: ActivityResultLauncher<Uri>, o
     context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)))
 }
 
-
 fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: ActivityResultLauncher<Intent>) {
     val discoveries = getDiscoveries(context).map {
         if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
+        if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
     }
     val icon = ContextCompat.getDrawable(context, R.drawable.pinged)
 
@@ -259,7 +263,9 @@ fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: ActivityRe
                 true
             }
         }
-        mapView.overlays.add(marker)
+        if (!mapView.overlays.contains(marker)) {
+            mapView.overlays.add(marker)
+        }
     }
     mapView.invalidate()
 }

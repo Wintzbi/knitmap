@@ -58,6 +58,9 @@ import com.example.myapplication.storage.saveDiscoveries
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import org.osmdroid.util.GeoPoint
 import java.io.Serializable
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 data class Discovery(
@@ -67,7 +70,8 @@ data class Discovery(
     val latitude: Double,
     val longitude: Double,
     var imageUri: String? = null,
-    val uuid: String = UUID.randomUUID().toString()
+    val uuid: String = UUID.randomUUID().toString(),
+    val date: String =  SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
 ) : Serializable
 
 
@@ -151,6 +155,7 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
         mutableStateListOf<Discovery>().apply {
             addAll(getDiscoveries(context).map {
                 if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
+                if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
             })
         }
     }
