@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,8 +10,12 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.provider.MediaStore
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -19,12 +24,10 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.core.graphics.toColorInt
 import com.example.myapplication.discovery.Discovery
 import com.example.myapplication.discovery.DiscoveryActivity
 import com.example.myapplication.storage.getDiscoveries
-import com.example.myapplication.storage.getLastKnownPoint
 import com.example.myapplication.storage.saveDiscoveries
 import com.example.myapplication.storage.saveLastKnownPoint
 import org.osmdroid.config.Configuration
@@ -34,7 +37,6 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -128,6 +130,7 @@ class MapActivity : BaseActivity() {
             MenuWithDropdown()
         }
         mapView = findViewById(R.id.activity_map)
+        mapView.minZoomLevel = 3.0;
     }
 
     private fun setupMap() {
@@ -174,20 +177,16 @@ class MapActivity : BaseActivity() {
         addDiscoveryMarkers(mapView, this, discoveryLauncher)
 
         locationOverlay.runOnFirstFix {
-            val userLocation = locationOverlay.myLocation
             runOnUiThread {
-                val savedPoint = getLastKnownPoint(this)
-                val target = when {
-                    userLocation != null -> GeoPoint(userLocation.latitude, userLocation.longitude)
-                    savedPoint != null -> savedPoint
-                    lastDiscoveryPoint != null -> lastDiscoveryPoint
-                    else -> defaultParis
-                }
-                lastKnownPoint = target
-                mapView.controller.setCenter(target)
-                mapView.controller.setZoom(17.5)
-
-                scratchOverlay.scratchAt(target)
+                tryCenterOnUserLocation(
+                    context = this@MapActivity,
+                    mapView = mapView,
+                    locationOverlay = locationOverlay,
+                    fallback = lastDiscoveryPoint ?: defaultParis,
+                    onSuccess = { lastKnownPoint = it },
+                    onFail = { lastKnownPoint = it },
+                    onScratch = { point -> scratchOverlay.scratchAt(point) }
+                )
             }
         }
     }
@@ -228,18 +227,30 @@ fun launchDiscoveryWithImage(context: Context, uri: Uri?, point: GeoPoint, launc
 }
 
 fun startCameraIntent(context: Context, launcher: ActivityResultLauncher<Uri>, onUriReady: (Uri) -> Unit) {
-    // Créer un fichier dans le dossier Pictures
-    val picturesDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-    val fileName = "IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.jpg"
-    val file = File(picturesDir, fileName)
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val fileName = "IMG_$timestamp.jpg"
 
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
-    onUriReady(uri)
-    launcher.launch(uri)
+    val contentValues = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/KnitMapPictures")
+        }
+    }
 
-    // Enregistrer dans la galerie après la prise de photo
-    context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)))
+    val resolver = context.contentResolver
+    val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+    if (imageUri != null) {
+        onUriReady(imageUri)
+        Handler(Looper.getMainLooper()).post {
+            launcher.launch(imageUri)
+        }
+    } else {
+        Toast.makeText(context, "Erreur : impossible de créer l'image", Toast.LENGTH_SHORT).show()
+    }
 }
+
 
 fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: ActivityResultLauncher<Intent>) {
     val discoveries = getDiscoveries(context).map {
@@ -268,4 +279,44 @@ fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: ActivityRe
         }
     }
     mapView.invalidate()
+}
+
+fun tryCenterOnUserLocation(
+    context: Context,
+    mapView: MapView,
+    locationOverlay: MyLocationNewOverlay,
+    fallback: GeoPoint,
+    onSuccess: ((GeoPoint) -> Unit)? = null,
+    onFail: ((GeoPoint) -> Unit)? = null,
+    onScratch: ((GeoPoint) -> Unit)? = null
+) {
+    val maxRetries = 10
+    val intervalMs = 1000L
+    var attempts = 0
+
+    val handler = Handler(Looper.getMainLooper())
+    val runnable = object : Runnable {
+        override fun run() {
+            val loc = locationOverlay.myLocation
+            if (loc != null) {
+                val userPoint = GeoPoint(loc.latitude, loc.longitude)
+                mapView.controller.setZoom(17.5)
+                mapView.controller.animateTo(userPoint)
+                onSuccess?.invoke(userPoint)
+                onScratch?.invoke(userPoint)
+                Toast.makeText(context, "Centré sur votre position", Toast.LENGTH_SHORT).show()
+            } else if (attempts < maxRetries) {
+                attempts++
+                handler.postDelayed(this, intervalMs)
+            } else {
+                mapView.controller.setZoom(17.5)
+                mapView.controller.animateTo(fallback)
+                onFail?.invoke(fallback)
+                onScratch?.invoke(fallback)
+                Toast.makeText(context, "Position non trouvée, centrage alternatif", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    handler.post(runnable)
 }

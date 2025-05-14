@@ -52,7 +52,6 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".ProfilActivity" />
 
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
