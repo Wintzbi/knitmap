@@ -18,6 +18,7 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import com.example.myapplication.discovery.DiscoveryListActivity
+import androidx.compose.ui.zIndex
 
 @Composable
 fun MenuWithDropdown() {
@@ -46,10 +47,12 @@ fun MenuWithDropdown() {
         AnimatedVisibility(
             visible = expanded,
             enter = enterTransition,
-            exit = exitTransition
+            exit = exitTransition,
+            modifier = Modifier.zIndex(1f) // 👈 ici
         ) {
             Box(
                 modifier = Modifier
+                    .zIndex(1f) // 👈 aussi ici pour être sûr
                     .padding(start = 16.dp, top = 80.dp)
                     .wrapContentSize()
                     .widthIn(max = 150.dp)

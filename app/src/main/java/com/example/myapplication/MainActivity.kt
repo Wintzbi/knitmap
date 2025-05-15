@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -62,7 +63,7 @@ class MainActivity : BaseActivity() {
 
         if (requestCode == cameraPermissionRequestCode) {
             if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                // La permission a été refusée, tu peux afficher un message ici si tu veux
+                Toast.makeText(this, "Vous devez acceptez la permission", Toast.LENGTH_SHORT).show()
             }
         }
     }

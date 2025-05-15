@@ -62,6 +62,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+
 
 data class Discovery(
     var title: String,
@@ -193,9 +196,6 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
             contentScale = ContentScale.Crop
         )
 
-        Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
-            MenuWithDropdown()
-        }
 
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -206,9 +206,11 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
             Text("Découvertes", fontSize = 32.sp, color = Color(0xFF4E7072).copy(alpha = 0.8f), modifier = Modifier.padding(bottom = 16.dp))
 
             GenericListWithControls(
-                items = discoveries,
+                items = discoveries.sortedByDescending {
+                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(it.date)
+                },
                 onAdd = {
-                    val newDiscovery = Discovery("", "", R.drawable.cat03, location.latitude, location.longitude,null)
+                    val newDiscovery = Discovery("", "", R.drawable.cat03, location.latitude, location.longitude, null)
                     discoveries.add(newDiscovery)
                     selectedIndex = discoveries.indexOf(newDiscovery)
                     saveDiscoveries(context, discoveries)
@@ -217,7 +219,12 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
                     launcher.launch(intent)
                 },
                 onDelete = { index ->
-                    discoveries.removeAt(index)
+                    // Il faut supprimer à partir de l'index original dans la liste non triée
+                    val sortedList = discoveries.sortedByDescending {
+                        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(it.date)
+                    }
+                    val toDelete = sortedList[index]
+                    discoveries.removeIf { it.uuid == toDelete.uuid }
                     saveDiscoveries(context, discoveries)
                 },
                 itemContent = { item, index, onDeleteClick ->
@@ -254,6 +261,10 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
                     }
                 }
             )
+
+        }
+        Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
+            MenuWithDropdown()
         }
     }
 }
