@@ -2,6 +2,7 @@ package com.example.myapplication.storage
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.core.content.edit
 import com.example.myapplication.discovery.Discovery
 import com.example.myapplication.friend.Friend
@@ -10,6 +11,8 @@ import com.example.myapplication.travel.Travel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.osmdroid.util.GeoPoint
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 private const val PREF_NAME = "my_complex_data"
 private val gson = Gson()
@@ -51,7 +54,41 @@ fun removeFriendByName(context: Context, friendName: String) {
 fun saveDiscoveries(context: Context, discoveries: List<Discovery>) {
     val json = gson.toJson(discoveries)
     getPrefs(context).edit { putString("discoveries", json) }
+
+    val auth = FirebaseAuth.getInstance()
+    val userId = auth.currentUser?.uid ?: return
+    val db = FirebaseFirestore.getInstance()
+
+    val pingCollection = db.collection("pings")
+
+    Log.d("PingDebug", "Nombre de discoveries à sauvegarder : ${discoveries.size}")
+
+    for (discovery in discoveries) {
+        Log.d("PingDebug", "Saving discovery with UUID: ${discovery.uuid}")
+
+        val pingData = hashMapOf(
+            "userId" to userId,
+            "uuid" to discovery.uuid,
+            "title" to discovery.title,
+            "description" to discovery.description,
+            "latitude" to discovery.latitude,
+            "longitude" to discovery.longitude,
+            "date" to discovery.date
+        )
+
+        pingCollection.document(discovery.uuid).set(pingData)
+            .addOnSuccessListener {
+                Log.d("PingDebug", "Saved discovery ${discovery.uuid}")
+            }
+            .addOnFailureListener { e ->
+                Log.e("PingDebug", "Failed to save discovery ${discovery.uuid}", e)
+            }
+    }
 }
+
+
+
+
 fun getDiscoveries(context: Context): List<Discovery> {
     val json = getPrefs(context).getString("discoveries", "[]")
     val type = object : TypeToken<List<Discovery>>() {}.type
@@ -62,14 +99,31 @@ fun getDiscoveries(context: Context): List<Discovery> {
 
 fun removeDiscoveryByUuid(context: Context, uuid: String) {
     val prefs = getPrefs(context)
-    val json = prefs.getString("discoveries", null) ?: return
+    val json = prefs.getString("discoveries", null)
+    if (json == null) {
+        Log.e("PingDebug", "Aucune découverte locale à supprimer")
+        return
+    }
     val type = object : TypeToken<List<Discovery>>() {}.type
     val discoveries: MutableList<Discovery> = gson.fromJson(json, type)
 
     val updatedDiscoveries = discoveries.filterNot { it.uuid == uuid }
+    Log.d("PingDebug", "Suppression locale : avant=${discoveries.size} après=${updatedDiscoveries.size}")
 
     prefs.edit { putString("discoveries", gson.toJson(updatedDiscoveries)) }
+
+    val db = FirebaseFirestore.getInstance()
+    db.collection("pings").document(uuid)
+        .delete()
+        .addOnSuccessListener {
+            Log.d("PingDebug", "Discovery supprimé dans Firestore : $uuid")
+        }
+        .addOnFailureListener { e ->
+            Log.e("PingDebug", "Erreur suppression Firestore : $uuid", e)
+        }
 }
+
+
 
 // ---------------------- VOYAGES ----------------------
 
