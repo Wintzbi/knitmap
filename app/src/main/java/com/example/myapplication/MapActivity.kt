@@ -30,6 +30,8 @@ import com.example.myapplication.discovery.DiscoveryActivity
 import com.example.myapplication.storage.getDiscoveries
 import com.example.myapplication.storage.saveDiscoveries
 import com.example.myapplication.storage.saveLastKnownPoint
+import com.example.myapplication.storage.getLastKnownPoint
+import com.example.myapplication.storage.removeLastKnownPoint
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -48,12 +50,14 @@ class MapActivity : BaseActivity() {
     private lateinit var cameraLauncher: ActivityResultLauncher<Uri>
     private lateinit var discoveryLauncher: ActivityResultLauncher<Intent>
     private var photoUri: Uri? = null
-    private var lastKnownPoint = GeoPoint(48.8583, 2.2944)
+    private var lastKnownPoint: GeoPoint? = null
     private var isFollowing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Configuration.getInstance().load(applicationContext, getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
+        Configuration.getInstance().load(applicationContext, getSharedPreferences("osmdroid",
+            MODE_PRIVATE
+        ))
         setContentView(R.layout.activity_map)
 
         setupLayout()
@@ -64,36 +68,43 @@ class MapActivity : BaseActivity() {
             if (result.resultCode == RESULT_OK) {
                 val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
                 updated?.let { it ->
-                    val discovery = it.copy(
-                        latitude = lastKnownPoint.latitude,
-                        longitude = lastKnownPoint.longitude,
-                        imageUri = it.imageUri
-                    )
-                    val existing = getDiscoveries(this).map {
-                        if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
-                        if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
-                    }.toMutableList()
-                    val index = existing.indexOfFirst { it.uuid == updated.uuid }
+                    if (lastKnownPoint != null) {
+                        val discovery = it.copy(
+                            latitude = lastKnownPoint!!.latitude,
+                            longitude = lastKnownPoint!!.longitude,
+                            imageUri = it.imageUri
+                        )
+                        val existing = getDiscoveries(this).map {
+                            if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
+                            if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
+                        }.toMutableList()
+                        val index = existing.indexOfFirst { it.uuid == updated.uuid }
 
-                    if (index != -1) {
-                        existing[index] = updated
+                        if (index != -1) {
+                            existing[index] = updated
+                        } else {
+                            existing.add(updated)
+                        }
+                        saveDiscoveries(this, existing)
+                        addDiscoveryMarkers(mapView, this, discoveryLauncher)
+                        Toast.makeText(this, "Discovery ajoutée", Toast.LENGTH_SHORT).show()
                     } else {
-                        existing.add(updated)
+                        Toast.makeText(this, "Position inconnue, impossible d'enregistrer la découverte.", Toast.LENGTH_LONG).show()
                     }
-                    saveDiscoveries(this, existing)
 
-                    Toast.makeText(this, "Discovery ajoutée", Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
         cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success && photoUri != null) {
-                launchDiscoveryWithImage(this, photoUri, lastKnownPoint, discoveryLauncher)
+            if (success && photoUri != null && lastKnownPoint != null) {
+                launchDiscoveryWithImage(this, photoUri, lastKnownPoint!!, discoveryLauncher)
+                addDiscoveryMarkers(mapView, this, discoveryLauncher)
+            } else if (lastKnownPoint != null) {
+                launchDiscoveryWithImage(this, null, lastKnownPoint!!, discoveryLauncher)
                 addDiscoveryMarkers(mapView, this, discoveryLauncher)
             } else {
-                launchDiscoveryWithImage(this, null, lastKnownPoint, discoveryLauncher)
-                addDiscoveryMarkers(mapView, this, discoveryLauncher)
+                Toast.makeText(this, "Position inconnue, impossible de créer une découverte", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -107,7 +118,12 @@ class MapActivity : BaseActivity() {
         findViewById<ImageView>(R.id.Ping_Boutton).apply {
             setImageResource(R.drawable.ping_resized)
             setOnClickListener {
-                startCameraIntent(this@MapActivity, cameraLauncher) { uri -> photoUri = uri }
+                if (lastKnownPoint == null) {
+                    Toast.makeText(this@MapActivity, "Veuillez activer la localisation pour pouvoir ajouter un point.", Toast.LENGTH_LONG).show()
+                    startActivity(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                } else {
+                    startCameraIntent(this@MapActivity, cameraLauncher) { uri -> photoUri = uri }
+                }
             }
         }
 
@@ -130,14 +146,13 @@ class MapActivity : BaseActivity() {
             MenuWithDropdown()
         }
         mapView = findViewById(R.id.activity_map)
-        mapView.minZoomLevel = 3.0;
+        mapView.minZoomLevel = 3.0
     }
 
     private fun setupMap() {
         mapView.setTileSource(TileSourceFactory.MAPNIK)
         mapView.setMultiTouchControls(true)
 
-        val defaultParis = GeoPoint(48.8566, 2.3522)
         val discoveries = getDiscoveries(this).map {
             if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
             if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
@@ -146,32 +161,41 @@ class MapActivity : BaseActivity() {
         val lastDiscovery = discoveries.lastOrNull()
         val lastDiscoveryPoint = lastDiscovery?.let { GeoPoint(it.latitude, it.longitude) }
 
-        // --- AJOUT DU SCRATCH OVERLAY ---
         val scratchOverlay = ScratchOverlay(mapView)
-
         mapView.overlays.add(0, scratchOverlay)
+
         val provider = GpsMyLocationProvider(this)
         val locationOverlay = MyLocationNewOverlay(provider, mapView)
         locationOverlay.enableMyLocation()
         mapView.overlays.add(locationOverlay)
 
-        // Listener GPS pour mises à jour en temps réel
         val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-        val locationListener = object : LocationListener {
-            override fun onLocationChanged(location: Location) {
-                lastKnownPoint = GeoPoint(location.latitude, location.longitude)
-                scratchOverlay.scratchAt(lastKnownPoint)
-                saveLastKnownPoint(this@MapActivity, lastKnownPoint)
+
+        // ✅ Récupération immédiate de la dernière position connue
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            val lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            lastLocation?.let {
+                lastKnownPoint = GeoPoint(it.latitude, it.longitude)
+                saveLastKnownPoint(this, lastKnownPoint!!)
             }
 
-            @Deprecated("Deprecated in Java")
-            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
-            override fun onProviderEnabled(provider: String) {}
-            override fun onProviderDisabled(provider: String) {}
-        }
+            // ✅ Ecoute des mises à jour en temps réel
+            val locationListener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    lastKnownPoint = GeoPoint(location.latitude, location.longitude)
+                    scratchOverlay.scratchAt(lastKnownPoint!!)
+                    removeLastKnownPoint(this@MapActivity)
+                    saveLastKnownPoint(this@MapActivity, lastKnownPoint!!)
+                }
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                @Deprecated("Deprecated in Java")
+                override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+                override fun onProviderEnabled(provider: String) {}
+                override fun onProviderDisabled(provider: String) {}
+            }
+
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, locationListener)
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener) // facultatif, mais améliore la vitesse
         }
 
         addDiscoveryMarkers(mapView, this, discoveryLauncher)
@@ -182,18 +206,18 @@ class MapActivity : BaseActivity() {
                     context = this@MapActivity,
                     mapView = mapView,
                     locationOverlay = locationOverlay,
-                    fallback = lastDiscoveryPoint ?: defaultParis,
-                    onSuccess = { lastKnownPoint = it },
-                    onFail = { lastKnownPoint = it },
+                    fallback = lastDiscoveryPoint,
                     onScratch = { point -> scratchOverlay.scratchAt(point) }
                 )
             }
         }
     }
 
+
     override fun onPause() {
         super.onPause()
-        saveLastKnownPoint(this, lastKnownPoint)
+        getLastKnownPoint(this@MapActivity)?.let { removeLastKnownPoint(this@MapActivity) }
+        lastKnownPoint?.let { saveLastKnownPoint(this@MapActivity, it) }
     }
 
     private fun requestPermissionsIfNecessary() {
@@ -257,45 +281,55 @@ fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: ActivityRe
         if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
         if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
     }
+
     val icon = ContextCompat.getDrawable(context, R.drawable.pinged)
 
     discoveries.forEach { discovery ->
-        val marker = Marker(mapView).apply {
-            position = GeoPoint(discovery.latitude, discovery.longitude)
-            title = discovery.title
-            snippet = discovery.description
-            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            this.icon = icon  // <-- correction ici
-            setOnMarkerClickListener { _, _ ->
-                val intent = Intent(context, DiscoveryActivity::class.java).apply {
-                    putExtra("discovery", discovery)
-                }
-                launcher.launch(intent)
-                true
-            }
+        val alreadyExists = mapView.overlays.any { overlay ->
+            (overlay as? Marker)?.let { marker ->
+                marker.subDescription == discovery.uuid
+            } == true
         }
-        if (!mapView.overlays.contains(marker)) {
+
+        if (!alreadyExists) {
+            val marker = Marker(mapView).apply {
+                position = GeoPoint(discovery.latitude, discovery.longitude)
+                title = discovery.title
+                snippet = discovery.description
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                this.icon = icon
+                subDescription = discovery.uuid  // On stocke l'uuid ici
+
+                setOnMarkerClickListener { _, _ ->
+                    val intent = Intent(context, DiscoveryActivity::class.java).apply {
+                        putExtra("discovery", discovery)
+                    }
+                    launcher.launch(intent)
+                    true
+                }
+            }
             mapView.overlays.add(marker)
         }
     }
     mapView.invalidate()
 }
 
+
 fun tryCenterOnUserLocation(
     context: Context,
     mapView: MapView,
     locationOverlay: MyLocationNewOverlay,
-    fallback: GeoPoint,
+    fallback: GeoPoint? = null,          //  GeoPoint?  ← peut être nul
     onSuccess: ((GeoPoint) -> Unit)? = null,
     onFail: ((GeoPoint) -> Unit)? = null,
     onScratch: ((GeoPoint) -> Unit)? = null
 ) {
     val maxRetries = 10
-    val intervalMs = 1000L
+    val intervalMs = 1_000L
     var attempts = 0
 
     val handler = Handler(Looper.getMainLooper())
-    val runnable = object : Runnable {
+    handler.post(object : Runnable {
         override fun run() {
             val loc = locationOverlay.myLocation
             if (loc != null) {
@@ -309,14 +343,25 @@ fun tryCenterOnUserLocation(
                 attempts++
                 handler.postDelayed(this, intervalMs)
             } else {
-                mapView.controller.setZoom(17.5)
-                mapView.controller.animateTo(fallback)
-                onFail?.invoke(fallback)
-                onScratch?.invoke(fallback)
-                Toast.makeText(context, "Position non trouvée, centrage alternatif", Toast.LENGTH_SHORT).show()
+                // échec définitif
+                if (fallback != null) {
+                    // on possède un dernier point connu (découverte)&nbsp;: on l’utilise
+                    mapView.controller.setZoom(17.5)
+                    mapView.controller.animateTo(fallback)
+                    onFail?.invoke(fallback)
+                    onScratch?.invoke(fallback)
+                    Toast.makeText(context, "Position non trouvée, centrage sur votre dernière découverte", Toast.LENGTH_SHORT).show()
+                } else {
+                    // rien du tout: on demande à activer le GPS/permissions
+                    Toast.makeText(context, "Impossible d’obtenir votre position. Veuillez activer la localisation puis réessayer.", Toast.LENGTH_LONG).show()
+                    // Ouvre directement les réglages&nbsp;(optionnel mais pratique)
+                    if (getLastKnownPoint(context) != null) {
+                        mapView.controller.setZoom(17.5)
+                        mapView.controller.animateTo(getLastKnownPoint(context) ?: fallback)
+                    }
+                    context.startActivity(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }
             }
         }
-    }
-
-    handler.post(runnable)
+    })
 }
