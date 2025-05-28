@@ -73,7 +73,8 @@ fun saveDiscoveries(context: Context, discoveries: List<Discovery>) {
             "description" to discovery.description,
             "latitude" to discovery.latitude,
             "longitude" to discovery.longitude,
-            "date" to discovery.date
+            "date" to discovery.date,
+            "uri" to discovery.imageUri
         )
 
         pingCollection.document(discovery.uuid).set(pingData)
@@ -86,6 +87,20 @@ fun saveDiscoveries(context: Context, discoveries: List<Discovery>) {
     }
 }
 
+fun updateDiscovery(context: Context, updatedDiscovery: Discovery) {
+    val prefs = getPrefs(context)
+    val json = prefs.getString("discoveries", null) ?: return
+    val type = object : TypeToken<List<Discovery>>() {}.type
+    val discoveries: MutableList<Discovery> = gson.fromJson(json, type)
+
+    Log.d("UpdateDebug", "Updated URI: ${updatedDiscovery.imageUri}")
+
+    val updatedList = discoveries.map {
+        if (it.uuid == updatedDiscovery.uuid) updatedDiscovery else it
+    }
+
+    prefs.edit { putString("discoveries", gson.toJson(updatedList)) }
+}
 
 
 

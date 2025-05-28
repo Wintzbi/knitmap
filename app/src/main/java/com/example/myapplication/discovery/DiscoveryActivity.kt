@@ -1,40 +1,26 @@
 package com.example.myapplication.discovery
 
+import android.content.ContentValues
+import android.content.Context
+import com.example.myapplication.startCameraIntent
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,17 +28,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.BaseActivity
 import com.example.myapplication.R
 import com.example.myapplication.storage.removeDiscoveryByUuid
+import com.example.myapplication.storage.updateDiscovery
 import com.example.myapplication.ui.theme.MyApplicationTheme
-import java.io.File
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
+import java.util.*
 
 class DiscoveryActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,6 +73,7 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
 
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
 
+    // Launcher pour prendre la photo
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
             cameraImageUri?.let { uri ->
@@ -99,22 +83,24 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
         }
     }
 
+    // Launcher pour choisir une image depuis la galerie
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
-            imageUri = it.toString()
-            showEditor = true
+            // Copie l'image dans un fichier dans le dossier Pictures/KnitMapPictures
+            val savedUri = saveGalleryImageToAppFolder(context, it)
+            savedUri?.let { finalUri ->
+                imageUri = finalUri.toString()
+                showEditor = true
+            }
         }
     }
 
+
+    // Lance la caméra via ta fonction startCameraIntent
     fun launchCamera() {
-        val photoFile = File.createTempFile(
-            "IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}",
-            ".jpg",
-            context.cacheDir
-        )
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", photoFile)
-        cameraImageUri = uri
-        cameraLauncher.launch(uri)
+        startCameraIntent(context, cameraLauncher) { uri ->
+            cameraImageUri = uri
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -128,7 +114,9 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
         Surface(
             shape = RoundedCornerShape(50),
             color = Color.Black.copy(alpha = 0.5f),
-            modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp)
         ) {
             IconButton(onClick = {
                 (context as? ComponentActivity)?.finish()
@@ -142,7 +130,9 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -153,7 +143,7 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                 shadowElevation = 4.dp,
                 modifier = Modifier.padding(16.dp)
             ) {
-                val painter = if (imageUri != null)
+                val painter = if (!imageUri.isNullOrEmpty())
                     rememberAsyncImagePainter(model = imageUri)
                 else
                     painterResource(id = discovery.imageResId)
@@ -215,20 +205,26 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
                 title = { Text("Choisir une image") },
                 text = {
                     Column {
-                        Text("Prendre une photo", modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                showImageOptions = false
-                                launchCamera()
-                            }
-                            .padding(8.dp))
-                        Text("Choisir dans la galerie", modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                showImageOptions = false
-                                galleryLauncher.launch("image/*")
-                            }
-                            .padding(8.dp))
+                        Text(
+                            "Prendre une photo",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showImageOptions = false
+                                    launchCamera()
+                                }
+                                .padding(8.dp)
+                        )
+                        Text(
+                            "Choisir dans la galerie",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showImageOptions = false
+                                    galleryLauncher.launch("image/*")
+                                }
+                                .padding(8.dp)
+                        )
                     }
                 },
                 confirmButton = {},
@@ -245,8 +241,14 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
             Column(horizontalAlignment = Alignment.End) {
                 if (showEditor) {
                     Button(onClick = {
-                        val updated = discovery.copy(title = title, description = description, imageUri = imageUri)
+                        val updated = discovery.copy(
+                            title = title,
+                            description = description,
+                            imageUri = imageUri
+                        )
+                        updateDiscovery(context, updated)
                         onSave(updated)
+                        showEditor = false
                     }) {
                         Text("Sauvegarder")
                     }
@@ -274,4 +276,32 @@ fun DiscoveryScreen(discovery: Discovery, onSave: (Discovery) -> Unit) {
             }
         }
     }
+}
+fun saveGalleryImageToAppFolder(context: Context, sourceUri: Uri): Uri? {
+    try {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val fileName = "IMG_$timestamp.jpg"
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/KnitMapPictures")
+            }
+        }
+
+        val resolver = context.contentResolver
+        val destUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+        destUri?.let { uri ->
+            resolver.openInputStream(sourceUri)?.use { inputStream ->
+                resolver.openOutputStream(uri)?.use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            return uri
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return null
 }
