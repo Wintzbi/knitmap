@@ -67,34 +67,23 @@ class MapActivity : BaseActivity() {
         discoveryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 val updated = result.data?.getSerializableExtra("updatedDiscovery") as? Discovery
-                updated?.let { it ->
-                    if (lastKnownPoint != null) {
-                        val discovery = it.copy(
-                            latitude = lastKnownPoint!!.latitude,
-                            longitude = lastKnownPoint!!.longitude,
-                            imageUri = it.imageUri
-                        )
-                        val existing = getDiscoveries(this).map {
-                            if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
-                            if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
-                        }.toMutableList()
-                        val index = existing.indexOfFirst { it.uuid == updated.uuid }
+                updated?.let {
+                    val existing = getDiscoveries(this).toMutableList()
+                    val index = existing.indexOfFirst { d -> d.uuid == updated.uuid }
 
-                        if (index != -1) {
-                            existing[index] = updated
-                        } else {
-                            existing.add(updated)
-                        }
-                        saveDiscoveries(this, existing)
-                        addDiscoveryMarkers(mapView, this, discoveryLauncher)
-                        Toast.makeText(this, "Discovery ajoutée", Toast.LENGTH_SHORT).show()
+                    if (index != -1) {
+                        existing[index] = updated
                     } else {
-                        Toast.makeText(this, "Position inconnue, impossible d'enregistrer la découverte.", Toast.LENGTH_LONG).show()
+                        existing.add(updated)
                     }
 
+                    saveDiscoveries(this, existing)
+                    updateDiscoveryMarker(mapView, this, updated, discoveryLauncher)
+                    Toast.makeText(this, "Discovery enregistrée", Toast.LENGTH_SHORT).show()
                 }
             }
         }
+
 
         cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success && photoUri != null && lastKnownPoint != null) {
@@ -364,4 +353,43 @@ fun tryCenterOnUserLocation(
             }
         }
     })
+}
+
+fun updateDiscoveryMarker(
+    mapView: MapView,
+    context: Context,
+    updatedDiscovery: Discovery,
+    launcher: ActivityResultLauncher<Intent>
+) {
+    val icon = ContextCompat.getDrawable(context, R.drawable.pinged)
+
+    // Supprimer le marqueur existant
+    val existingMarker = mapView.overlays.find {
+        (it as? Marker)?.subDescription == updatedDiscovery.uuid
+    }
+
+    if (existingMarker != null) {
+        mapView.overlays.remove(existingMarker)
+    }
+
+    // Ajouter le nouveau marqueur mis à jour
+    val marker = Marker(mapView).apply {
+        position = GeoPoint(updatedDiscovery.latitude, updatedDiscovery.longitude)
+        title = updatedDiscovery.title
+        snippet = updatedDiscovery.description
+        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+        this.icon = icon
+        subDescription = updatedDiscovery.uuid
+
+        setOnMarkerClickListener { _, _ ->
+            val intent = Intent(context, DiscoveryActivity::class.java).apply {
+                putExtra("discovery", updatedDiscovery)
+            }
+            launcher.launch(intent)
+            true
+        }
+    }
+
+    mapView.overlays.add(marker)
+    mapView.invalidate()
 }

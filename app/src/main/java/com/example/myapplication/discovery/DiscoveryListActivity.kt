@@ -179,12 +179,11 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
                 if (index != -1) {
                     discoveries[index] = updated
                 } else {
-                    discoveries.add(updated) // au cas où elle n'était pas dans la liste
+                    discoveries.add(updated)
                 }
 
                 saveDiscoveries(context, discoveries)
             }
-
         }
     }
 
@@ -196,20 +195,24 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
             contentScale = ContentScale.Crop
         )
 
-
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
             verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.height(200.dp))
 
-            Text("Découvertes", fontSize = 32.sp, color = Color(0xFF4E7072).copy(alpha = 0.8f), modifier = Modifier.padding(bottom = 16.dp))
+            Text(
+                "Découvertes",
+                fontSize = 32.sp,
+                color = Color(0xFF4E7072).copy(alpha = 0.8f),
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-            GenericListWithControls(
-                items = discoveries.sortedByDescending {
-                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(it.date)
-                },
-                onAdd = {
+            // Bouton Ajouter
+            androidx.compose.material3.Button(
+                onClick = {
                     val newDiscovery = Discovery("", "", R.drawable.cat03, location.latitude, location.longitude, null)
                     discoveries.add(newDiscovery)
                     selectedIndex = discoveries.indexOf(newDiscovery)
@@ -218,51 +221,81 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
                     intent.putExtra("discovery", newDiscovery)
                     launcher.launch(intent)
                 },
-                onDelete = { index ->
-                    // Il faut supprimer à partir de l'index original dans la liste non triée
-                    val sortedList = discoveries.sortedByDescending {
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+            ) {
+                Text("+ Ajouter")
+            }
+
+            // Liste scrollable
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+            ) {
+                itemsIndexed(
+                    discoveries.sortedByDescending {
                         SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(it.date)
                     }
-                    val toDelete = sortedList[index]
-                    discoveries.removeIf { it.uuid == toDelete.uuid }
-                    saveDiscoveries(context, discoveries)
-                },
-                itemContent = { item, index, onDeleteClick ->
-                    Row(
+                ) { index, item ->
+                    androidx.compose.material3.Surface(
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        color = Color(0xFF4E7072).copy(alpha = 0.8f),
+                        tonalElevation = 4.dp,
+                        shadowElevation = 4.dp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp)
+                            .padding(vertical = 6.dp)
                             .clickable {
                                 selectedIndex = index
                                 val intent = Intent(context, DiscoveryActivity::class.java)
                                 intent.putExtra("discovery", item)
                                 launcher.launch(intent)
-                            },
-                        verticalAlignment = Alignment.CenterVertically
+                            }
                     ) {
-                        val painter = if (item.imageUri != null)
-                            rememberAsyncImagePainter(model = item.imageUri)
-                        else
-                            painterResource(id = item.imageResId)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val painter = if (item.imageUri != null)
+                                rememberAsyncImagePainter(model = item.imageUri)
+                            else
+                                painterResource(id = item.imageResId)
 
-                        Image(
-                            painter = painter,
-                            contentDescription = item.title,
-                            modifier = Modifier.size(48.dp),
-                            contentScale = ContentScale.Crop
-                        )
+                            Image(
+                                painter = painter,
+                                contentDescription = item.title,
+                                modifier = Modifier.size(48.dp),
+                                contentScale = ContentScale.Crop
+                            )
 
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(text = item.title, fontSize = 20.sp)
-                        Spacer(modifier = Modifier.weight(1f))
-                        IconButton(onClick = onDeleteClick) {
-                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Supprimer", tint = Color.Red)
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(text = item.title, fontSize = 20.sp, color = Color.White)
+                            Spacer(modifier = Modifier.weight(1f))
+                            IconButton(onClick = {
+                                val sortedList = discoveries.sortedByDescending {
+                                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(it.date)
+                                }
+                                val toDelete = sortedList[index]
+                                discoveries.removeIf { it.uuid == toDelete.uuid }
+                                saveDiscoveries(context, discoveries)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Supprimer",
+                                    tint = Color.Red
+                                )
+                            }
                         }
                     }
                 }
-            )
+            }
 
         }
+
         Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
             MenuWithDropdown()
         }
