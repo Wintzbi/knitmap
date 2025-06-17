@@ -80,7 +80,7 @@ data class Discovery(
 
 
 class DiscoveryListActivity : BaseActivity() {
-    private lateinit var locationManager: LocatioznManager
+    private lateinit var locationManager: LocationManager
 
     private val _currentLocation = mutableStateOf(GeoPoint(48.8583, 2.2944))
 
