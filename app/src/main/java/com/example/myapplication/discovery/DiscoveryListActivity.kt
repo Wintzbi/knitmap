@@ -64,6 +64,7 @@ import java.util.Locale
 import java.util.UUID
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import com.example.myapplication.storage.removeDiscoveryByUuid
 
 
 data class Discovery(
@@ -79,7 +80,7 @@ data class Discovery(
 
 
 class DiscoveryListActivity : BaseActivity() {
-    private lateinit var locationManager: LocationManager
+    private lateinit var locationManager: LocatioznManager
 
     private val _currentLocation = mutableStateOf(GeoPoint(48.8583, 2.2944))
 
@@ -280,6 +281,7 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
                                     SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(it.date)
                                 }
                                 val toDelete = sortedList[index]
+                                removeDiscoveryByUuid(context,toDelete.uuid)
                                 discoveries.removeIf { it.uuid == toDelete.uuid }
                                 saveDiscoveries(context, discoveries)
                             }) {

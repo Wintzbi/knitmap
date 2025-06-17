@@ -5,28 +5,29 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:ignore="MissingConstraints">
+    tools:ignore="ExtraText,MissingConstraints">
 
     <!-- Carte plein écran -->
     <org.osmdroid.views.MapView
         android:id="@+id/activity_map"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Bandeau haut (sous le ComposeView) -->
     <ImageView
         android:id="@+id/Top"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:scaleType="fitStart"
         android:importantForAccessibility="no"
-        app:srcCompat="@drawable/up_map_fond"
+        android:scaleType="fitStart"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:srcCompat="@drawable/up_map_fond"
+        tools:ignore="ImageContrastCheck" />
 
     <!-- ComposeView au-dessus du bandeau haut -->
     <androidx.compose.ui.platform.ComposeView
@@ -35,8 +36,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="0dp"
         android:layout_marginTop="50dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Bandeau bas -->
     <ImageView
@@ -44,11 +45,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:scaleType="fitEnd"
-        app:srcCompat="@drawable/map_fond_bouton"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:ignore="ContentDescription" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/map_fond_bouton"
+        tools:ignore="ContentDescription,ImageContrastCheck" />
 
     <!-- Bouton Ping -->
     <ImageButton
@@ -57,13 +58,13 @@
         android:layout_height="0dp"
         android:backgroundTint="#00FFFFFF"
         android:scaleType="fitEnd"
-        app:srcCompat="@drawable/ping_resized"
         app:layout_constraintBottom_toBottomOf="@id/Bot"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintWidth_percent="0.38"
         app:layout_constraintHeight_percent="0.18"
         app:layout_constraintHorizontal_bias="0.54"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintWidth_percent="0.38"
+        app:srcCompat="@drawable/ping_resized"
         tools:ignore="ContentDescription,SpeakableTextPresentCheck" />
 
     <!-- Bouton Suivre -->
@@ -74,15 +75,15 @@
         android:background="@drawable/oval_background_follow"
         android:padding="8dp"
         android:scaleType="centerInside"
-        app:srcCompat="@drawable/target"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintVertical_bias="0.98"
-        app:layout_constraintHorizontal_bias="0.95"
-        app:layout_constraintWidth_percent="0.12"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHeight_percent="0.12"
+        app:layout_constraintHorizontal_bias="0.95"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.98"
+        app:layout_constraintWidth_percent="0.12"
+        app:srcCompat="@drawable/target"
         tools:ignore="ContentDescription,SpeakableTextPresentCheck" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

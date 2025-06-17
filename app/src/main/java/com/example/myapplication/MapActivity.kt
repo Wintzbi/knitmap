@@ -10,12 +10,9 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Environment
-import android.os.Handler
-import android.os.Looper
+import android.os.*
 import android.provider.MediaStore
+import android.provider.Settings
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -27,22 +24,20 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.toColorInt
 import com.example.myapplication.discovery.Discovery
 import com.example.myapplication.discovery.DiscoveryActivity
-import com.example.myapplication.storage.getDiscoveries
-import com.example.myapplication.storage.saveDiscoveries
-import com.example.myapplication.storage.saveLastKnownPoint
-import com.example.myapplication.storage.getLastKnownPoint
-import com.example.myapplication.storage.removeLastKnownPoint
+import com.example.myapplication.storage.*
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.events.MapAdapter
+import org.osmdroid.events.MapEvent
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
+import java.util.*
 
 class MapActivity : BaseActivity() {
 
@@ -53,15 +48,17 @@ class MapActivity : BaseActivity() {
     private var lastKnownPoint: GeoPoint? = null
     private var isFollowing = false
 
+    private var firebaseSyncHandler = Handler(Looper.getMainLooper())
+    private val firebaseSyncRunnable = Runnable {
+        ScratchOverlay.flushScratchedPointsToFirebase()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Configuration.getInstance().load(applicationContext, getSharedPreferences("osmdroid",
-            MODE_PRIVATE
-        ))
+        Configuration.getInstance().load(applicationContext, getSharedPreferences("osmdroid", MODE_PRIVATE))
         setContentView(R.layout.activity_map)
 
         setupLayout()
-
         requestPermissionsIfNecessary()
 
         discoveryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -70,20 +67,17 @@ class MapActivity : BaseActivity() {
                 updated?.let {
                     val existing = getDiscoveries(this).toMutableList()
                     val index = existing.indexOfFirst { d -> d.uuid == updated.uuid }
-
                     if (index != -1) {
                         existing[index] = updated
                     } else {
                         existing.add(updated)
                     }
-
                     saveDiscoveries(this, existing)
                     updateDiscoveryMarker(mapView, this, updated, discoveryLauncher)
                     Toast.makeText(this, "Discovery enregistrée", Toast.LENGTH_SHORT).show()
                 }
             }
         }
-
 
         cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success && photoUri != null && lastKnownPoint != null) {
@@ -98,6 +92,34 @@ class MapActivity : BaseActivity() {
         }
 
         setupMap()
+
+        fetchAndSyncDiscoveriesWithFirebase(
+            context = this,
+            onComplete = {
+                runOnUiThread {
+                    addDiscoveryMarkers(mapView, this, discoveryLauncher)
+                    Toast.makeText(this, "Pings synchronisés depuis Firebase", Toast.LENGTH_SHORT).show()
+                }
+            },
+            onFailure = {
+                runOnUiThread {
+                    Toast.makeText(this, "Échec de la synchronisation. Activez le Wi-Fi ou les données.", Toast.LENGTH_LONG).show()
+                }
+            }
+        )
+
+        fetchAndSyncScratchedPointsWithFirebase(
+            context = this,
+            onComplete = {
+                Toast.makeText(this, "Fog synchronisés depuis Firebase", Toast.LENGTH_SHORT).show()
+                mapView.invalidate()
+            },
+            onFailure = {
+                Toast.makeText(this, "Erreur lors de la synchronisation du fog.", Toast.LENGTH_SHORT).show()
+            }
+        )
+
+        firebaseSyncHandler.postDelayed(firebaseSyncRunnable, 10_000L)
     }
 
     private fun setupLayout() {
@@ -109,7 +131,7 @@ class MapActivity : BaseActivity() {
             setOnClickListener {
                 if (lastKnownPoint == null) {
                     Toast.makeText(this@MapActivity, "Veuillez activer la localisation pour pouvoir ajouter un point.", Toast.LENGTH_LONG).show()
-                    startActivity(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                 } else {
                     startCameraIntent(this@MapActivity, cameraLauncher) { uri -> photoUri = uri }
                 }
@@ -160,7 +182,6 @@ class MapActivity : BaseActivity() {
 
         val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
 
-        // ✅ Récupération immédiate de la dernière position connue
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             val lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
             lastLocation?.let {
@@ -168,23 +189,23 @@ class MapActivity : BaseActivity() {
                 saveLastKnownPoint(this, lastKnownPoint!!)
             }
 
-            // ✅ Ecoute des mises à jour en temps réel
             val locationListener = object : LocationListener {
                 override fun onLocationChanged(location: Location) {
                     lastKnownPoint = GeoPoint(location.latitude, location.longitude)
                     scratchOverlay.scratchAt(lastKnownPoint!!)
+                    firebaseSyncHandler.removeCallbacks(firebaseSyncRunnable)
+                    firebaseSyncHandler.postDelayed(firebaseSyncRunnable, 10_000L)
                     removeLastKnownPoint(this@MapActivity)
                     saveLastKnownPoint(this@MapActivity, lastKnownPoint!!)
                 }
 
-                @Deprecated("Deprecated in Java")
                 override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
                 override fun onProviderEnabled(provider: String) {}
                 override fun onProviderDisabled(provider: String) {}
             }
 
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, locationListener)
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener) // facultatif, mais améliore la vitesse
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener)
         }
 
         addDiscoveryMarkers(mapView, this, discoveryLauncher)
@@ -200,13 +221,28 @@ class MapActivity : BaseActivity() {
                 )
             }
         }
-    }
 
+        mapView.addMapListener(object : MapAdapter() {
+            override fun onScroll(event: ScrollEvent?): Boolean {
+                addDiscoveryMarkers(mapView, this@MapActivity, discoveryLauncher)
+                return true
+            }
+
+            override fun onZoom(event: ZoomEvent?): Boolean {
+                addDiscoveryMarkers(mapView, this@MapActivity, discoveryLauncher)
+                return true
+            }
+        })
+
+    }
 
     override fun onPause() {
         super.onPause()
-        getLastKnownPoint(this@MapActivity)?.let { removeLastKnownPoint(this@MapActivity) }
-        lastKnownPoint?.let { saveLastKnownPoint(this@MapActivity, it) }
+        getLastKnownPoint(this)?.let { removeLastKnownPoint(this) }
+        lastKnownPoint?.let { saveLastKnownPoint(this, it) }
+
+        firebaseSyncHandler.removeCallbacks(firebaseSyncRunnable)
+        ScratchOverlay.flushScratchedPointsToFirebase()
     }
 
     private fun requestPermissionsIfNecessary() {
@@ -222,6 +258,7 @@ class MapActivity : BaseActivity() {
         }
     }
 }
+
 
 // --- Fonctions utilitaires communes ---
 fun launchDiscoveryWithImage(context: Context, uri: Uri?, point: GeoPoint, launcher: ActivityResultLauncher<Intent>) {
@@ -266,39 +303,35 @@ fun startCameraIntent(context: Context, launcher: ActivityResultLauncher<Uri>, o
 
 
 fun addDiscoveryMarkers(mapView: MapView, context: Context, launcher: ActivityResultLauncher<Intent>) {
-    val discoveries = getDiscoveries(context).map {
-        if (it.uuid.isBlank()) it.copy(uuid = UUID.randomUUID().toString()) else it
-        if (it.date.isBlank()) it.copy(date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())) else it
+    val bounds = mapView.boundingBox
+
+    val discoveries = getDiscoveries(context).filter {
+        it.latitude in bounds.latSouth..bounds.latNorth &&
+                it.longitude in bounds.lonWest..bounds.lonEast
     }
 
     val icon = ContextCompat.getDrawable(context, R.drawable.pinged)
 
+    mapView.overlays.removeAll { it is Marker }
+
     discoveries.forEach { discovery ->
-        val alreadyExists = mapView.overlays.any { overlay ->
-            (overlay as? Marker)?.let { marker ->
-                marker.subDescription == discovery.uuid
-            } == true
-        }
+        val marker = Marker(mapView).apply {
+            position = GeoPoint(discovery.latitude, discovery.longitude)
+            title = discovery.title
+            snippet = discovery.description
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            this.icon = icon
+            subDescription = discovery.uuid
 
-        if (!alreadyExists) {
-            val marker = Marker(mapView).apply {
-                position = GeoPoint(discovery.latitude, discovery.longitude)
-                title = discovery.title
-                snippet = discovery.description
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                this.icon = icon
-                subDescription = discovery.uuid  // On stocke l'uuid ici
-
-                setOnMarkerClickListener { _, _ ->
-                    val intent = Intent(context, DiscoveryActivity::class.java).apply {
-                        putExtra("discovery", discovery)
-                    }
-                    launcher.launch(intent)
-                    true
+            setOnMarkerClickListener { _, _ ->
+                val intent = Intent(context, DiscoveryActivity::class.java).apply {
+                    putExtra("discovery", discovery)
                 }
+                launcher.launch(intent)
+                true
             }
-            mapView.overlays.add(marker)
         }
+        mapView.overlays.add(marker)
     }
     mapView.invalidate()
 }
@@ -348,7 +381,7 @@ fun tryCenterOnUserLocation(
                         mapView.controller.setZoom(17.5)
                         mapView.controller.animateTo(getLastKnownPoint(context) ?: fallback)
                     }
-                    context.startActivity(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                 }
             }
         }

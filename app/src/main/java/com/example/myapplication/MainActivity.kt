@@ -149,9 +149,6 @@ fun LoginScreen(auth: FirebaseAuth) {
 
 
 }
-
-
-
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoginScreen() {
