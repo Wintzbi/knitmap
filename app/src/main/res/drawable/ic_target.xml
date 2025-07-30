@@ -1,0 +1,58 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Anneau extérieur avec couleur dynamique -->
+<path
+android:fillColor="@color/targetColor"
+    android:fillType="evenOdd"
+    android:pathData="
+    M12,2
+    A10,10 0 1,1 2,12
+    A10,10 0 0,1 12,2
+    M12,4
+    A8,8 0 1,0 20,12
+    A8,8 0 0,0 12,4Z" />
+
+    <!-- Anneau intérieur avec couleur dynamique -->
+<path
+android:fillColor="@color/targetColor"
+android:fillType="evenOdd"
+android:pathData="
+            M12,8
+            A4,4 0 1,1 8,12
+            A4,4 0 0,1 12,8
+            M12,10
+            A2,2 0 1,0 14,12
+            A2,2 0 0,0 12,10Z" />
+
+    <!-- Trait haut -->
+<path
+android:strokeColor="@color/targetColor"
+android:strokeWidth="1.5"
+android:strokeLineCap="round"
+android:pathData="M12,1 L12,5" />
+
+    <!-- Trait bas -->
+<path
+android:strokeColor="@color/targetColor"
+android:strokeWidth="1.5"
+android:strokeLineCap="round"
+android:pathData="M12,19 L12,23" />
+
+    <!-- Trait gauche -->
+<path
+android:strokeColor="@color/targetColor"
+android:strokeWidth="1.5"
+android:strokeLineCap="round"
+android:pathData="M1,12 L5,12" />
+
+    <!-- Trait droit -->
+<path
+android:strokeColor="@color/targetColor"
+android:strokeWidth="1.5"
+android:strokeLineCap="round"
+android:pathData="M19,12 L23,12" />
+    </vector>

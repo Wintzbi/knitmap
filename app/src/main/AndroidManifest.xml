@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.myapplication">
+    package="com.knitMap">
 
     <!-- Permissions pour utiliser la carte et Internet -->
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -13,6 +13,21 @@
 
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+    <uses-permission android:name="settings.ACTION_MANAGE_WRITE_SETTINGS"/>
+
+    <permission android:name="read_media_images" />
+    <!-- Pour lire les images après réinstallation -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:ignore="SelectedPhotoAccess" />
+
+
+
 
     <application
         android:allowBackup="true"
@@ -27,7 +42,7 @@
 
         <!-- Déclaration de MainActivity pour la connexion -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.knitMap.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApplication">
             <intent-filter>
@@ -38,19 +53,20 @@
 
         <!-- Déclaration de MapActivity pour afficher la carte -->
         <activity
-            android:name=".MapActivity"
+            android:name="com.knitMap.map.MapActivity"
             android:exported="true"
             android:label="Map"/>
-        <activity android:name=".travel.TravelListActivity" />
-        <activity android:name=".travel.TravelActivity" />
-        <activity android:name=".friend.FriendsActivity" />
-        <activity android:name=".group.GroupActivity" />
-        <activity android:name=".group.GroupListActivity" />
-        <activity android:name=".discovery.DiscoveryActivity" />
-        <activity android:name=".discovery.DiscoveryListActivity" />
-        <activity android:name=".friend.FriendListActivity" />
-        <activity android:name=".RegisterActivity" />
-        <activity android:name=".ProfilActivity" />
+        <activity android:name="com.knitMap.travel.TravelListActivity" />
+        <activity android:name="com.knitMap.travel.TravelActivity" />
+        <activity android:name="com.knitMap.friend.FriendsActivity" />
+        <activity android:name="com.knitMap.group.GroupActivity" />
+        <activity android:name="com.knitMap.group.GroupListActivity" />
+        <activity android:name="com.knitMap.discovery.DiscoveryActivityXml" />
+        <activity android:name="com.knitMap.discovery.DiscoveryListActivity" />
+        <activity android:name="com.knitMap.parametre.ParametreActivity" />
+        <activity android:name="com.knitMap.friend.FriendListActivity" />
+        <activity android:name="com.knitMap.RegisterActivity" />
+        <activity android:name="com.knitMap.ProfilActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

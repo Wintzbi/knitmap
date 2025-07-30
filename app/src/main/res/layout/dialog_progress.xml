@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#FFFAF0"
+    android:layout_margin="20dp"
+    android:elevation="4dp">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="⏳ En cours..."
+        android:textSize="20sp"
+        android:textColor="#F06292"
+        android:fontFamily="@font/retroactivepolice"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Progress bar avec pourcentage intégré -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="32dp"
+        android:layout_marginTop="4dp">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:progressDrawable="@drawable/diner_progress_drawable"
+            android:max="100" />
+
+        <TextView
+            android:id="@+id/progressTextOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="0%"
+            android:gravity="center"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+    </FrameLayout>
+
+    <Button
+        android:id="@+id/cancelButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="✋ Annuler"
+        android:backgroundTint="#80DEEA"
+        android:textColor="#004D40"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/retroactivepolice"
+        android:padding="12dp"
+        android:background="@drawable/diner_button_background" />
+</LinearLayout>

@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">KnitMap</string>
+    <string name="titre">Titre</string>
+    <string name="retour">Retour</string>
+    <string name="description">Description</string>
+    <string name="Save">Sauvegarder</string>
+    <string name="Cancel">Annuler</string>
+    <string name="delete">Supprimer</string>
 </resources>
