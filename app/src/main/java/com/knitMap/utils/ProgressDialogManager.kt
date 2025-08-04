@@ -14,13 +14,15 @@ object ProgressDialogManager {
     var isCancelled = false
         private set
 
+    // Affiche la ProgressDialog
     fun show(
         activity: Activity,
         title: String,
         onCancel: () -> Unit
     ) {
-
-        if (dialog?.isShowing == true) return
+        if (dialog != null) {
+            dismiss()  // Ferme et nettoie l'ancienne si elle est encore en mémoire
+        }
 
         isCancelled = false
 
@@ -28,14 +30,17 @@ object ProgressDialogManager {
         val progressBar = view.findViewById<ProgressBar>(R.id.progressBar)
         val progressTextOverlay = view.findViewById<TextView>(R.id.progressTextOverlay)
         val cancelButton = view.findViewById<Button>(R.id.cancelButton)
+        val titleTextView = view.findViewById<TextView>(R.id.title)
 
         val builder = AlertDialog.Builder(activity)
-            .setTitle(null)  // Le titre est dans le layout, pas la boîte de dialogue
+            .setTitle(null)
             .setView(view)
             .setCancelable(false)
 
         dialog = builder.create()
         dialog?.show()
+
+        titleTextView?.text = title
 
         cancelButton.setOnClickListener {
             isCancelled = true
@@ -50,10 +55,18 @@ object ProgressDialogManager {
             val percent = if (max > 0) (current * 100 / max) else 0
             progressTextOverlay.text = "$percent%"
         }
+        updateCallback?.invoke(0, 1)
     }
 
+    // Met à jour la ProgressDialog
     fun update(current: Int, max: Int) {
         updateCallback?.invoke(current, max)
+    }
+
+    // Met à jour le titre de la ProgressDialog
+    fun updateTitle(title: String) {
+        val titleTextView = dialog?.findViewById<TextView>(R.id.title)
+        titleTextView?.text = title
     }
 
     fun dismiss() {
@@ -67,3 +80,4 @@ object ProgressDialogManager {
         return dialog?.isShowing == true
     }
 }
+

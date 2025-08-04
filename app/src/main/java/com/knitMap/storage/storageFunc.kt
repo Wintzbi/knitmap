@@ -218,8 +218,10 @@ fun fetchAndSyncDiscoveriesWithProgress(
             val total = docs.size
             val remoteDiscoveries = mutableListOf<Discovery>()
 
+            // Mise à jour de la progression globale
             for ((index, doc) in docs.withIndex()) {
                 if (isCancelled()) return@addOnSuccessListener
+                // Mise à jour de la progression à chaque itération
                 onProgress(index + 1, total)
 
                 try {
@@ -240,17 +242,20 @@ fun fetchAndSyncDiscoveriesWithProgress(
                 }
             }
 
+            // Récupération des découvertes locales
             val localDiscoveries = getDiscoveriesLocally(context).toMutableList()
             val localUuids = localDiscoveries.map { it.uuid }.toSet()
             val remoteUuids = remoteDiscoveries.map { it.uuid }.toSet()
 
+            // Ajout des découvertes manquantes depuis Firebase
             val newFromRemote = remoteDiscoveries.filter { it.uuid !in localUuids }
             localDiscoveries.addAll(newFromRemote)
 
+            // Ajout des découvertes locales manquantes dans Firebase
             val missingInRemote = localDiscoveries.filter { it.uuid !in remoteUuids }
 
+            // Mise à jour de la progression des découvertes manquantes à uploader
             val uploadTotal = missingInRemote.size
-
             for ((uploadIndex, discovery) in missingInRemote.withIndex()) {
                 if (isCancelled()) return@addOnSuccessListener
                 onProgress(uploadIndex + 1, uploadTotal)
@@ -267,10 +272,14 @@ fun fetchAndSyncDiscoveriesWithProgress(
                     "locationName" to discovery.locationName
                 )
 
+                // Sauvegarde de la découverte sur Firebase
                 db.collection("pings").document(discovery.uuid).set(pingData)
             }
 
+            // Sauvegarde des découvertes locales après ajout de celles manquantes depuis Firebase
             saveDiscoveriesLocally(context, localDiscoveries)
+
+            // Appel de onComplete à la fin de la synchronisation
             onComplete()
         }
         .addOnFailureListener { e ->
@@ -278,7 +287,6 @@ fun fetchAndSyncDiscoveriesWithProgress(
             onFailure(e)
         }
 }
-
 
 fun fetchAndSyncDiscoveriesWithFirebase(
     context: Context,
@@ -489,7 +497,7 @@ fun cleanAndSortScratchedPointsWithProgress(
 
     for ((index, point) in points.withIndex()) {
         if (isCancelled()) return
-        onProgress(index + 1, total)
+        onProgress(index + 1, total)  // Mise à jour de la progression
         val key = "${point.latitude},${point.longitude}"
         if (key !in seen) {
             seen.add(key)
@@ -502,7 +510,6 @@ fun cleanAndSortScratchedPointsWithProgress(
 
     onComplete()
 }
-
 
 fun fetchAndSyncScratchesWithProgress(
     context: Context,
@@ -525,7 +532,7 @@ fun fetchAndSyncScratchesWithProgress(
                 val total = pointsData?.size ?: 0
                 pointsData?.mapIndexedNotNull { i, item ->
                     if (isCancelled()) return@addOnSuccessListener
-                    onProgress(i + 1, total)
+                    onProgress(i + 1, total)  // Mise à jour de la progression
                     val map = item as? Map<*, *>
                     val lat = (map?.get("lat") as? Number)?.toDouble()
                     val lon = (map?.get("lon") as? Number)?.toDouble()
@@ -720,7 +727,7 @@ fun flushPendingActionsDiscoverieWithProgress(
 ) {
     if (!isOnline) return
 
-    val prefs = context.getSharedPreferences("my_complex_data", Context.MODE_PRIVATE)
+    val prefs = getPrefs(context)
     val json = prefs.getString("pending_discovery_actions", "[]") ?: return
     val type = object : TypeToken<MutableList<PendingActionDiscoverie>>() {}.type
     val actions: MutableList<PendingActionDiscoverie> = gson.fromJson(json, type)
@@ -728,7 +735,7 @@ fun flushPendingActionsDiscoverieWithProgress(
     val total = actions.size
     for ((index, action) in actions.withIndex()) {
         if (isCancelled()) return
-        onProgress(index + 1, total)
+        onProgress(index + 1, total)  // Mise à jour de la progression
 
         when (action.type) {
             "add" -> action.discovery?.let {
@@ -736,8 +743,11 @@ fun flushPendingActionsDiscoverieWithProgress(
             }
             "update" -> action.discovery?.let { discovery ->
                 checkDiscoveryExistsInFirebase(discovery.uuid) { exists ->
-                    if (exists) updateDiscoveryInFirebase(discovery)
-                    else saveDiscoveriesToFirebase(listOf(discovery))
+                    if (exists) {
+                        updateDiscoveryInFirebase(discovery)
+                    } else {
+                        saveDiscoveriesToFirebase(listOf(discovery)) // fallback: créer si absent
+                    }
                 }
             }
             "delete" -> action.uuid?.let {
@@ -787,26 +797,23 @@ fun flushPendingScratchesWithProgress(
 ) {
     if (!isOnline) return
 
-    val prefs = context.getSharedPreferences("my_complex_data", Context.MODE_PRIVATE)
+    val prefs = getPrefs(context)
     val json = prefs.getString("pending_scratches", "[]") ?: return
     val type = object : TypeToken<MutableList<PendingScratch>>() {}.type
     val queue: MutableList<PendingScratch> = gson.fromJson(json, type)
 
-    val geoPoints = mutableListOf<GeoPoint>()
     val total = queue.size
-
     for ((index, item) in queue.withIndex()) {
         if (isCancelled()) return
-        onProgress(index + 1, total)
-        geoPoints.add(GeoPoint(item.latitude, item.longitude))
-    }
+        onProgress(index + 1, total)  // Mise à jour de la progression
 
-    if (geoPoints.isNotEmpty()) {
-        saveScratchedPointsToFirebase(geoPoints)
-        prefs.edit { remove("pending_scratches") }
-    }
+        addScratchedPointToFirebase(GeoPoint(item.latitude, item.longitude))
 
-    onComplete()
+        // Si c'est la dernière itération, on appelle onComplete
+        if (index == total - 1) {
+            onComplete()
+        }
+    }
 }
 
 //---------------------- Shader ----------------------

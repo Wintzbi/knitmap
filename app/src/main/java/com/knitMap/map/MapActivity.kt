@@ -2,7 +2,6 @@ package com.knitMap.map
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,7 +14,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.provider.MediaStore
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
@@ -35,12 +33,12 @@ import com.knitMap.MenuWithDropdown
 import com.knitMap.R
 import com.knitMap.discovery.Discovery
 import com.knitMap.discovery.DiscoveryActivityXml
+import com.knitMap.storage.flushPendingScratches
 import com.knitMap.storage.getDiscoveriesLocally
 import com.knitMap.storage.getLastKnownPoint
 import com.knitMap.storage.removeLastKnownPoint
 import com.knitMap.storage.saveDiscoveriesLocally
 import com.knitMap.storage.saveLastKnownPoint
-import com.knitMap.storage.flushPendingScratches
 import com.knitMap.utils.getLocationFromCoordinates
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,7 +64,7 @@ class MapActivity : BaseActivity() {
     private lateinit var mapView: MapView
     private lateinit var cameraLauncher: ActivityResultLauncher<Uri>
     private lateinit var discoveryLauncher: ActivityResultLauncher<Intent>
-    private var photoUri: Uri? = null
+    private var photoUri: String? = null
     private var lastKnownPoint: GeoPoint? = null
 
     private var shouldCenterOnUser = true
@@ -124,7 +122,7 @@ class MapActivity : BaseActivity() {
                     startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                 } else {
                     startCameraIntent(this@MapActivity, cameraLauncher) { path ->
-                        photoUri = Uri.fromFile(File(path))
+                        photoUri = path
                     }
                 }
             }
@@ -303,7 +301,7 @@ class MapActivity : BaseActivity() {
 // --- Fonctions utilitaires communes ---
 fun launchDiscoveryWithImage(
     context: Context,
-    uri: Uri?,
+    uri: String?,
     point: GeoPoint,
     launcher: ActivityResultLauncher<Intent>
 ) {
@@ -339,7 +337,6 @@ fun launchDiscoveryWithImage(
     }
 }
 
-
 fun startCameraIntent(
     context: Context,
     launcher: ActivityResultLauncher<Uri>,
@@ -347,26 +344,21 @@ fun startCameraIntent(
 ) {
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
     val fileName = "IMG_$timestamp.jpg"
-    val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-    val knitMapDir = File(picturesDir, "KnitMapPictures")
 
-    if (!knitMapDir.exists()) knitMapDir.mkdirs()
-    val imageFile = File(knitMapDir, fileName)
+    // Utilise getExternalFilesDir pour que ce soit dans ton app, privé
+    val picturesDir = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "KnitMapPictures")
+    if (!picturesDir.exists()) picturesDir.mkdirs()
 
-    val contentValues = ContentValues().apply {
-        put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-    }
+    val imageFile = File(picturesDir, fileName)
 
-    val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-    if (uri != null) {
-        onPathReady(imageFile.absolutePath)  // ↩️ Retourne le chemin fichier
-        Handler(Looper.getMainLooper()).post {
-            launcher.launch(uri)
-        }
-    } else {
-        Toast.makeText(context, "Erreur : impossible de créer l'image", Toast.LENGTH_SHORT).show()
-    }
+    val uri = androidx.core.content.FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.provider",  // doit correspondre à AndroidManifest + file_paths.xml
+        imageFile
+    )
+
+    onPathReady(imageFile.absolutePath)  // ✅ Ce fichier sera bien rempli après photo
+    launcher.launch(uri)
 }
 
 

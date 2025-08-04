@@ -68,7 +68,11 @@ class ParametreActivity : BaseActivity() {
             flushPendingActionsDiscoverieWithProgress(
                 context = this,
                 onProgress = { current, max ->
-                    runOnUiThread { ProgressDialogManager.update(current, max) }
+                    val percentProgress = if (max > 0) (current * 100 / max) else 0
+                    runOnUiThread {
+                        ProgressDialogManager.update(current, max)
+                        ProgressDialogManager.updateTitle("Flushing discoveries: $percentProgress%")
+                    }
                 },
                 isCancelled = { ProgressDialogManager.isCancelled },
                 onComplete = {
@@ -82,7 +86,11 @@ class ParametreActivity : BaseActivity() {
                         fetchAndSyncDiscoveriesWithProgress(
                             context = this,
                             onProgress = { current, max ->
-                                runOnUiThread { ProgressDialogManager.update(current, max) }
+                                val percent = if (max > 0) (current * 100 / max) else 0
+                                runOnUiThread {
+                                    ProgressDialogManager.update(current, max)
+                                    ProgressDialogManager.updateTitle("Synchronizing discoveries: $percent%")
+                                }
                             },
                             isCancelled = { ProgressDialogManager.isCancelled },
                             onComplete = {
@@ -103,7 +111,6 @@ class ParametreActivity : BaseActivity() {
             )
         }
 
-
 // ---- BOUTON SYNC FIREBASE (FOG) ----
         val syncFogButton = findViewById<Button>(R.id.button)
         syncFogButton.setOnClickListener {
@@ -120,11 +127,18 @@ class ParametreActivity : BaseActivity() {
             flushPendingScratchesWithProgress(
                 context = this,
                 onProgress = { current, max ->
-                    runOnUiThread { ProgressDialogManager.update(current, max) }
+                    // Calculer le pourcentage
+                    val percentProgress = if (max > 0) (current * 100 / max) else 0
+                    // Mise à jour de la barre de progression et du titre
+                    runOnUiThread {
+                        ProgressDialogManager.update(current, max)
+                        ProgressDialogManager.updateTitle("Flushing pending scratches: $percentProgress%")
+                    }
                 },
                 isCancelled = { ProgressDialogManager.isCancelled },
                 onComplete = {
                     runOnUiThread {
+                        Toast.makeText(this, "✅ Flush terminé", Toast.LENGTH_SHORT).show()
                         ProgressDialogManager.dismiss()
 
                         // Étape 2 : nettoyage et tri
@@ -135,10 +149,15 @@ class ParametreActivity : BaseActivity() {
                         cleanAndSortScratchedPointsWithProgress(
                             context = this,
                             onProgress = { current, max ->
-                                runOnUiThread { ProgressDialogManager.update(current, max) }
+                                val percent = if (max > 0) (current * 100 / max) else 0
+                                runOnUiThread {
+                                    ProgressDialogManager.update(current, max)
+                                    ProgressDialogManager.updateTitle("Cleaning and sorting points: $percent%")
+                                }
                             },
                             isCancelled = { ProgressDialogManager.isCancelled },
                             onComplete = {
+                                Toast.makeText(this, "✅ Clean terminé", Toast.LENGTH_SHORT).show()
                                 runOnUiThread {
                                     ProgressDialogManager.dismiss()
 
@@ -150,7 +169,11 @@ class ParametreActivity : BaseActivity() {
                                     fetchAndSyncScratchesWithProgress(
                                         context = this,
                                         onProgress = { current, max ->
-                                            runOnUiThread { ProgressDialogManager.update(current, max) }
+                                            val percent = if (max > 0) (current * 100 / max) else 0
+                                            runOnUiThread {
+                                                ProgressDialogManager.update(current, max)
+                                                ProgressDialogManager.updateTitle("Synchronizing Fog: $percent%")
+                                            }
                                         },
                                         isCancelled = { ProgressDialogManager.isCancelled },
                                         onComplete = {

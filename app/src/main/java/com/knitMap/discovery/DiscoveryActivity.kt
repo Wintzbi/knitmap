@@ -7,12 +7,14 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import coil.load
 import com.knitMap.BaseActivity
@@ -27,6 +29,8 @@ import androidx.core.net.toUri
 
 class DiscoveryActivityXml : BaseActivity() {
 
+    private val TAG = "DiscoveryActivityXml"
+
     private var updatedImageUri: String? = null
     private lateinit var discovery: Discovery
 
@@ -38,15 +42,24 @@ class DiscoveryActivityXml : BaseActivity() {
     private lateinit var btnSave: Button
     private lateinit var btnCancel: Button
 
-    @SuppressLint("UseKtx")
+    private var pendingImagePath: String? = null
+
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) {
-            updatedImageUri?.let {
-                        imageView.load(File(it))
+        if (success && pendingImagePath != null) {
+            val file = File(pendingImagePath!!)
+            if (file.exists()) {
+                updatedImageUri = pendingImagePath
+                imageView.load(file)
                 updateButtonsVisibility()
+            } else {
+                Toast.makeText(this, "Erreur : image non trouvée", Toast.LENGTH_SHORT).show()
             }
+        } else if (!success && pendingImagePath != null) {
+            File(pendingImagePath!!).delete()
         }
+        pendingImagePath = null
     }
+
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -128,6 +141,7 @@ class DiscoveryActivityXml : BaseActivity() {
             editTitle.setText(discovery.title)
             editDescription.setText(discovery.description)
             updatedImageUri = discovery.imageUri
+            pendingImagePath = null  // 🔧 Ajoute ceci pour bien annuler la nouvelle photo
             reloadImage()
             updateButtonsVisibility()
         }
@@ -136,6 +150,8 @@ class DiscoveryActivityXml : BaseActivity() {
             removeDiscoveryByUuidLocally(this, discovery.uuid)
             finish()
         }
+
+        logDiscovery()
 
         val watcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -150,7 +166,7 @@ class DiscoveryActivityXml : BaseActivity() {
     }
 
     private fun reloadImage() {
-        if (updatedImageUri.isNullOrBlank()) {
+        if (updatedImageUri.isNullOrBlank() || !File(updatedImageUri!!).exists()) {
             imageView.setImageResource(R.drawable.cat03)
         } else {
             imageView.load(updatedImageUri!!.toUri())
@@ -187,7 +203,21 @@ class DiscoveryActivityXml : BaseActivity() {
 
     private fun launchCamera() {
         startCameraIntent(this, cameraLauncher) { path ->
-            updatedImageUri = path
+            pendingImagePath = path
         }
     }
+    private fun logDiscovery() {
+        Log.d(TAG, "=== DiscoveryActivityXml STATE ===")
+        Log.d(TAG, "discovery.uuid = ${discovery.uuid}")
+        Log.d(TAG, "discovery.title = ${discovery.title}")
+        Log.d(TAG, "discovery.description = ${discovery.description}")
+        Log.d(TAG, "discovery.imageUri = ${discovery.imageUri}")
+        Log.d(TAG, "discovery.date = ${discovery.date}")
+        Log.d(TAG, "discovery.locationName = ${discovery.locationName}")
+        Log.d(TAG, "discovery.latitude = ${discovery.latitude}")
+        Log.d(TAG, "discovery.longitude = ${discovery.longitude}")
+        Log.d(TAG, "updatedImageUri = $updatedImageUri")
+        Log.d(TAG, "===============================")
+    }
+
 }

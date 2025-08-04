@@ -58,8 +58,11 @@ import com.knitMap.MainActivity.Companion.isOnline
 import com.knitMap.MenuWithDropdown
 import com.knitMap.R
 import com.knitMap.storage.getDiscoveriesLocally
+import com.knitMap.storage.getLastKnownPoint
 import com.knitMap.storage.removeDiscoveryByUuidLocally
+import com.knitMap.storage.removeLastKnownPoint
 import com.knitMap.storage.saveDiscoveriesLocally
+import com.knitMap.storage.saveLastKnownPoint
 import com.knitMap.ui.theme.MyApplicationTheme
 import com.knitMap.utils.getLocationFromCoordinates
 import kotlinx.coroutines.launch
@@ -236,8 +239,19 @@ fun DiscoveryListScreen(currentLocation: State<GeoPoint>) {
             // Bouton Ajouter
             androidx.compose.material3.Button(
                 onClick = {
-                    val lat = location.latitude
-                    val lon = location.longitude
+                    //val context = LocalContext.current
+                    val fallbackPoint = getLastKnownPoint(context)
+
+                    val current = currentLocation.value
+                    val isValidLocation = !(current.latitude == 48.8583 && current.longitude == 2.2944) // la position par défaut que tu as mis
+
+                    val lat = if (isValidLocation) current.latitude else fallbackPoint?.latitude ?: 0.0
+                    val lon = if (isValidLocation) current.longitude else fallbackPoint?.longitude ?: 0.0
+
+                    if (isValidLocation) {
+                        removeLastKnownPoint(context)
+                        saveLastKnownPoint(context, current) // on met à jour la position connue uniquement si on a un vrai point
+                    }
 
                     var newDiscovery = Discovery(
                         title = "",

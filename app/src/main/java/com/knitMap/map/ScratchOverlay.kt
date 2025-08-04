@@ -33,7 +33,9 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
     private val scratchPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
         style = Paint.Style.FILL
-        if(loadShaderState(mapView.context)) {maskFilter = BlurMaskFilter(40f, BlurMaskFilter.Blur.NORMAL)}
+        if (loadShaderState(mapView.context)) {
+            maskFilter = BlurMaskFilter(40f, BlurMaskFilter.Blur.NORMAL)
+        }
     }
 
     private val scratchedPoints = getScratchedPointsLocally(mapView.context).toMutableList()
@@ -42,6 +44,11 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
     private val scratchGrid = mutableMapOf<Pair<Int, Int>, MutableList<GeoPoint>>()
     private val discoveryGrid = mutableMapOf<Pair<Int, Int>, MutableList<GeoPoint>>()
     private val cellSizeMeters = 100.0
+
+    // --- Cache bitmap ---
+    private var lastZoom = -1.0
+    private var lastCenter: GeoPoint? = null
+    private var dirtyCache = true
 
     companion object {
         private var dirty = false
@@ -71,19 +78,19 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
                 mapView.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 overlayBitmap = createBitmap(mapView.width, mapView.height)
                 overlayCanvas = Canvas(overlayBitmap!!)
+                dirtyCache = true
             }
         })
     }
 
     fun scratchAt(point: GeoPoint) {
-        if (!scratchedPoints.contains(point)) {
+        if (!alreadyScratched(point)) {
             scratchedPoints.add(point)
             addToGrid(point, scratchGrid)
             saveScratchedPointsLocally(mapView.context, scratchedPoints)
             markDirty(mapView.context)
-
-            // Envoi immédiat à Firebase (incrémental)
             queuePendingScratch(mapView.context, point)
+            dirtyCache = true
         }
         mapView.invalidate()
     }
@@ -91,6 +98,17 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
     override fun draw(canvas: Canvas, mapView: MapView, shadow: Boolean) {
         if (shadow || overlayBitmap == null) return
 
+        val center = mapView.mapCenter as GeoPoint
+        val zoom = mapView.zoomLevelDouble
+
+        if (!dirtyCache && zoom == lastZoom && (lastCenter?.distanceToAsDouble(center)
+                ?: 1000.0) < 50.0
+        ) {
+            canvas.drawBitmap(overlayBitmap!!, 0f, 0f, null)
+            return
+        }
+
+        // Mise à jour du cache
         overlayBitmap!!.eraseColor(Color.TRANSPARENT)
 
         val projection = mapView.projection
@@ -105,7 +123,12 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
         clusterAndDrawPoints(getNearbyPoints(screenGeoBounds, discoveryGrid), projection, screenBounds, discoveryRadius)
 
         canvas.drawBitmap(overlayBitmap!!, 0f, 0f, null)
+
+        lastZoom = zoom
+        lastCenter = center
+        dirtyCache = false
     }
+
 
     private fun drawFog(projection: Projection) {
         val anchorGeo = GeoPoint(0.0, 0.0)
@@ -135,20 +158,31 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
         val screenPoints = points.map { projection.toPixels(it, null) }
             .filter { bounds.contains(it.x, it.y) }
 
-        val clustered = mutableListOf<Point>()
-        val threshold = projection.metersToEquatorPixels(radiusMeters / 1.5f)
-
-        for (point in screenPoints) {
-            val nearby = clustered.find {
-                ((it.x - point.x).toDouble().pow(2) + (it.y - point.y).toDouble().pow(2)) < threshold * threshold
-            }
-            if (nearby == null) clustered.add(point)
-        }
+        val clustered = clusterScreenPoints(screenPoints, projection.metersToEquatorPixels(radiusMeters / 1.5f).toInt())
 
         for (point in clustered) {
             val radius = projection.metersToEquatorPixels(radiusMeters)
             overlayCanvas?.drawCircle(point.x.toFloat(), point.y.toFloat(), radius, scratchPaint)
         }
+    }
+
+    private fun clusterScreenPoints(points: List<Point>, threshold: Int): List<Point> {
+        val clustered = mutableListOf<Point>()
+        val visited = mutableSetOf<Point>()
+
+        for (point in points) {
+            if (visited.contains(point)) continue
+            val cluster = points.filter {
+                !visited.contains(it) &&
+                        ((it.x - point.x).toDouble().pow(2) + (it.y - point.y).toDouble().pow(2)) < threshold * threshold
+            }
+            val avgX = cluster.map { it.x }.average().toInt()
+            val avgY = cluster.map { it.y }.average().toInt()
+            clustered.add(Point(avgX, avgY))
+            visited.addAll(cluster)
+        }
+
+        return clustered
     }
 
     private fun getExpandedScreenRect(projection: Projection, expansionMeters: Float): Rect {
@@ -191,5 +225,11 @@ class ScratchOverlay(private val mapView: MapView) : Overlay() {
         }
 
         return nearby
+    }
+
+    private fun alreadyScratched(p: GeoPoint): Boolean {
+        return scratchedPoints.any {
+            it.latitude == p.latitude && it.longitude == p.longitude
+        }
     }
 }
